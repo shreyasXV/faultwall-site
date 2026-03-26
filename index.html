@@ -413,6 +413,53 @@
   </div>
 </section>
 
+<!-- eBPF Deep Tech -->
+<section class="section" style="max-width:900px;">
+  <div class="section-header">
+    <div class="tag">Deep Tech</div>
+    <h2>Kernel-level resource attribution</h2>
+    <p>What you can't see, you can't control. We went deeper than anyone else.</p>
+  </div>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:40px;">
+    <div class="feature-card">
+      <h3 style="color:var(--accent-light);">eBPF Engine</h3>
+      <p>We hook directly into the Linux kernel's scheduler and block I/O subsystem using eBPF. Every CPU nanosecond and every disk byte is attributed to the exact PostgreSQL PID — and mapped back to the tenant in real-time.</p>
+    </div>
+    <div class="feature-card">
+      <h3 style="color:var(--accent-light);">Why this matters</h3>
+      <p>Traditional tools poll aggregated stats. FaultWall traces at the kernel level: "This INSERT from tenant acme_corp used 12ms of CPU and 480KB of disk I/O." No other PostgreSQL monitoring tool provides this precision.</p>
+    </div>
+  </div>
+
+  <div class="feature-card" style="margin-bottom:40px;">
+    <h3 style="color:var(--green); margin-bottom:12px;">🧬 AutoResearch — Self-Tuning Detection</h3>
+    <p style="margin-bottom:12px;">FaultWall deploys an autonomous optimization loop inspired by <a href="https://twitter.com/karpathy" style="color:var(--accent-light); text-decoration:none;">Andrej Karpathy's AutoResearch</a>. A genetic algorithm continuously evolves detection parameters — sensitivity thresholds, window sizes, baseline intervals — against your real workload.</p>
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; margin-top:16px;">
+      <div style="text-align:center; padding:16px; background:var(--bg); border-radius:8px;">
+        <div style="font-size:28px; font-weight:800; color:var(--red);">60%</div>
+        <div style="font-size:12px; color:var(--muted); margin-top:4px;">Before tuning</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--bg); border-radius:8px;">
+        <div style="font-size:28px; font-weight:800;">→</div>
+        <div style="font-size:12px; color:var(--muted); margin-top:4px;">100 generations</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--bg); border-radius:8px;">
+        <div style="font-size:28px; font-weight:800; color:var(--green);">100%</div>
+        <div style="font-size:12px; color:var(--muted); margin-top:4px;">After tuning · 0 false positives</div>
+      </div>
+    </div>
+    <p style="margin-top:16px; font-size:13px; color:var(--muted);">The longer FaultWall runs, the better it understands your database. No LLM needed — pure statistical optimization in Go.</p>
+  </div>
+
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:28px; text-align:center;">
+    <h3 style="margin-bottom:8px;">Want kernel-level tenant attribution?</h3>
+    <p style="color:var(--muted); font-size:14px; margin-bottom:20px;">Our eBPF engine is available for teams running self-hosted PostgreSQL. Validated on Linux 5.8+ with PostgreSQL 14-16.</p>
+    <a href="mailto:shreyas@faultwall.com" class="btn btn-primary" style="font-size:13px; padding:10px 20px;">Contact Us →</a>
+    <p style="color:var(--muted); font-size:12px; margin-top:12px;">shreyas@faultwall.com</p>
+  </div>
+</section>
+
 <!-- CTA -->
 <section class="cta">
   <h2>Your database is on fire.<br>FaultWall tells you who lit the match.</h2>

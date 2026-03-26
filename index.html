@@ -421,6 +421,21 @@
     <p>What you can't see, you can't control. We went deeper than anyone else.</p>
   </div>
 
+  <!-- Zero Impact Banner -->
+  <div style="background:linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02)); border:1px solid rgba(34,197,94,0.2); border-radius:12px; padding:24px 28px; margin-bottom:24px; display:flex; gap:16px; align-items:flex-start;">
+    <div style="font-size:28px; flex-shrink:0;">🛡️</div>
+    <div>
+      <h3 style="font-size:16px; font-weight:700; color:var(--green); margin-bottom:6px;">Read-Only. Zero Impact on Your Queries.</h3>
+      <p style="font-size:14px; color:var(--muted); line-height:1.65; margin-bottom:12px;">FaultWall connects as a read-only client. It polls Postgres catalog views (<code style="font-size:12px; color:var(--text); background:var(--bg); padding:2px 6px; border-radius:4px;">pg_stat_statements</code>, <code style="font-size:12px; color:var(--text); background:var(--bg); padding:2px 6px; border-radius:4px;">pg_stat_activity</code>) every 10 seconds — the same views every monitoring tool reads. It never modifies your data, never adds queries to your workload, and never touches your application traffic.</p>
+      <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--green); font-weight:700;">✓</span> Read-only connection</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--green); font-weight:700;">✓</span> No query interception</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--green); font-weight:700;">✓</span> No schema changes</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--green); font-weight:700;">✓</span> &lt;1% overhead (eBPF)</div>
+      </div>
+    </div>
+  </div>
+
   <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:40px;">
     <div class="feature-card">
       <h3 style="color:var(--accent-light);">eBPF Engine</h3>

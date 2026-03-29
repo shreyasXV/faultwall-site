@@ -290,9 +290,9 @@
 <!-- Install Block -->
 <div style="padding: 0 24px;">
   <div class="install-block">
-    <span class="dim"># One binary. One env var. Done.</span><br>
-    <code>DATABASE_URL=postgres://...  ./faultwall</code><br>
-    <span class="dim"># → Dashboard at localhost:8080</span>
+    <span class="dim"># One binary. One policy file. Done.</span><br>
+    <code>DATABASE_URL=postgres://... POLICY_FILE=./policies.yaml ./faultwall</code><br>
+    <span class="dim"># → Dashboard + enforcement at localhost:8080</span>
   </div>
 </div>
 
@@ -327,9 +327,19 @@
   </div>
   <div class="features-grid">
     <div class="feature-card">
-      <div class="feature-icon">🔍</div>
-      <h3>Auto-Detection</h3>
-      <p>Automatically identifies your tenant isolation pattern — schema-per-tenant, row-level, or database-per-tenant. Zero config needed.</p>
+      <div class="feature-icon">🛡️</div>
+      <h3>Agent Firewall</h3>
+      <p>Mission-scoped policies for AI agents. Define what each agent can do per mission in YAML — tables, operations, row limits. Everything else is blocked.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔑</div>
+      <h3>Agent Identity</h3>
+      <p>Agents identify via PostgreSQL's application_name: <code style="font-size:11px; background:var(--bg); padding:2px 5px; border-radius:3px;">agent:cursor-ai:mission:summarize</code>. FaultWall knows WHO is running WHAT.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Real-Time Enforcement</h3>
+      <p>Violating queries get killed instantly via pg_cancel_backend. Rogue agent tries DROP TABLE on a blocked table? Connection terminated.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🧠</div>
@@ -337,24 +347,14 @@
       <p>Statistical learning builds per-tenant baselines. Z-score analysis flags deviations. No LLM, no API keys — runs locally.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔮</div>
-      <h3>Predictive Alerts</h3>
-      <p>Linear regression on metric trends: "acme_corp will breach threshold in ~4 minutes." Act before the outage.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">⚡</div>
-      <h3>Auto-Throttling</h3>
-      <p>Kill runaway queries, enforce per-tenant connection limits. Configurable grace periods and cancel → terminate escalation.</p>
-    </div>
-    <div class="feature-card">
       <div class="feature-icon">💰</div>
       <h3>Cost Attribution</h3>
-      <p>"Tenant X costs $338/mo of your $360 RDS bill." Proportional allocation based on actual query time consumption.</p>
+      <p>"Tenant X costs $338/mo of your $360 RDS bill." Per-agent cost breakdowns based on actual query time consumption.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🤖</div>
       <h3>AI-Native (MCP)</h3>
-      <p>10-tool MCP server lets AI agents detect noisy neighbors and throttle them autonomously. No human in the loop.</p>
+      <p>10-tool MCP server lets agents check their own policies, view violations, and manage themselves autonomously.</p>
     </div>
   </div>
 </section>
@@ -369,29 +369,29 @@
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>Point it at your database</h3>
-        <p>Set DATABASE_URL and run the binary. FaultWall connects as a read-only client — it never modifies your data.</p>
+        <h3>Write your policy</h3>
+        <p>Define what each agent can do in policies.yaml — allowed tables, blocked operations, row limits, query timeouts. Per agent, per mission.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>It auto-detects your tenants</h3>
-        <p>Polls pg_stat_statements every 10 seconds, identifies your isolation pattern, and starts building per-tenant metrics.</p>
+        <h3>Run FaultWall</h3>
+        <p>Point it at your database with POLICY_FILE and POLICY_ENFORCEMENT=enforce. One binary, instant startup.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>See who's causing problems</h3>
-        <p>Real-time dashboard: tenant leaderboard, cost attribution, anomaly alerts, and breach predictions. Auto-refreshing.</p>
+        <h3>Agents identify themselves</h3>
+        <p>Each agent sets application_name = 'agent:cursor-ai:mission:summarize-feedback' when connecting. FaultWall parses the identity automatically.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">4</div>
       <div class="step-content">
-        <h3>Auto-throttle the noisy neighbors</h3>
-        <p>FaultWall auto-kills runaway queries and enforces limits. Or let your AI agent handle it via MCP.</p>
+        <h3>Violations get blocked</h3>
+        <p>Agent tries to access a table outside its mission scope? Connection killed. Blocked operation? Terminated. Everything logged in the real-time dashboard.</p>
       </div>
     </div>
   </div>
@@ -401,16 +401,16 @@
 <section class="mcp-section">
   <div class="section-header">
     <div class="tag">AI-Native</div>
-    <h2>Built for autonomous agents</h2>
-    <p>Every monitoring tool has a dashboard for humans. FaultWall is the first natively controllable by AI.</p>
+    <h2>Built for the confused deputy problem</h2>
+    <p>Your AI agent has valid credentials. A prompt injection tells it to DROP TABLE. FaultWall is the only thing standing between intent and disaster.</p>
   </div>
   <div class="mcp-demo">
-    <div class="line"><span class="user">You:</span> Which tenants are causing problems?</div>
-    <div class="line"><span class="tool">→ Claude calls get_noisy_tenants</span></div>
-    <div class="line"><span class="agent">Claude:</span> acme_corp has avg query time 234ms and is using 74% of resources ($338/mo). Their analytics export started 3 minutes ago. Want me to throttle them?</div>
-    <div class="line"><span class="user">You:</span> Yes, do it.</div>
-    <div class="line"><span class="tool">→ Claude calls throttle_tenant("acme_corp", "cancel")</span></div>
-    <div class="line" style="margin-bottom:0;"><span class="agent">Claude:</span> Done. Cancelled 3 active queries. P99 latency already dropping for other tenants.</div>
+    <div class="line"><span class="tool">Agent: agent:cursor-ai:mission:summarize-feedback</span></div>
+    <div class="line"><span class="tool">Query: SELECT * FROM public.users</span></div>
+    <div class="line"><span class="agent">FaultWall:</span> 🚨 BLOCKED — table "public.users" not in mission scope. Connection terminated (pid 1615).</div>
+    <div class="line" style="margin-top:24px;"><span class="tool">Agent: agent:cursor-ai:mission:summarize-feedback</span></div>
+    <div class="line"><span class="tool">Query: SELECT * FROM public.feedback</span></div>
+    <div class="line" style="margin-bottom:0;"><span class="agent">FaultWall:</span> ✅ Allowed — table "public.feedback" is in mission scope.</div>
   </div>
 </section>
 
@@ -423,16 +423,16 @@
   </div>
 
   <!-- Zero Impact Banner -->
-  <div style="background:linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02)); border:1px solid rgba(34,197,94,0.2); border-radius:12px; padding:24px 28px; margin-bottom:24px; display:flex; gap:16px; align-items:flex-start;">
+  <div style="background:linear-gradient(135deg, rgba(124,92,252,0.08), rgba(124,92,252,0.02)); border:1px solid rgba(124,92,252,0.2); border-radius:12px; padding:24px 28px; margin-bottom:24px; display:flex; gap:16px; align-items:flex-start;">
     <div style="font-size:28px; flex-shrink:0;">🛡️</div>
     <div>
-      <h3 style="font-size:16px; font-weight:700; color:var(--green); margin-bottom:6px;">Read-Only. Zero Impact on Your Queries.</h3>
-      <p style="font-size:14px; color:var(--muted); line-height:1.65; margin-bottom:12px;">FaultWall connects as a read-only client. It polls Postgres catalog views (<code style="font-size:12px; color:var(--text); background:var(--bg); padding:2px 6px; border-radius:4px;">pg_stat_statements</code>, <code style="font-size:12px; color:var(--text); background:var(--bg); padding:2px 6px; border-radius:4px;">pg_stat_activity</code>) every 10 seconds — the same views every monitoring tool reads. It never modifies your data, never adds queries to your workload, and never touches your application traffic.</p>
+      <h3 style="font-size:16px; font-weight:700; color:var(--accent-light); margin-bottom:6px;">Two Modes: Monitor or Enforce</h3>
+      <p style="font-size:14px; color:var(--muted); line-height:1.65; margin-bottom:12px;">In <strong style="color:var(--text);">monitor mode</strong>, FaultWall is read-only — it logs violations without blocking queries. In <strong style="color:var(--text);">enforce mode</strong>, it actively terminates connections that violate policies. Start with monitor to learn your agent traffic patterns, then switch to enforce when you're confident.</p>
       <div style="display:flex; gap:20px; flex-wrap:wrap;">
-        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--green); font-weight:700;">✓</span> Read-only connection</div>
-        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--green); font-weight:700;">✓</span> No query interception</div>
-        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--green); font-weight:700;">✓</span> No schema changes</div>
-        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--green); font-weight:700;">✓</span> &lt;1% overhead (eBPF)</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> No schema changes</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> No proxy required</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> Works with RDS/Aurora</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> &lt;1% overhead (eBPF)</div>
       </div>
     </div>
   </div>

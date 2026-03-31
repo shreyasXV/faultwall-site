@@ -134,15 +134,15 @@
     <h1>I Gave an AI Agent My Database Password</h1>
     <div class="meta">March 2026 · 6 min read</div>
 
-    <p>A few months ago I started giving AI agents direct access to our Postgres database. Data analysis, report generation, some automated ops stuff. You know the drill — build a tool, give it a connection string, let the LLM figure out the SQL.</p>
+    <p>A few months ago I started giving AI agents direct access to my Postgres database. Data analysis, report generation, some automated ops stuff. You know the drill — build a tool, give it a connection string, let the LLM figure out the SQL.</p>
 
     <p>It worked great. For about three weeks.</p>
 
-    <h2>The Incident</h2>
+    <h2>The Problem</h2>
 
-    <p>One of our agents ran a full table scan across a 2M-row table. CPU spiked to 90% for three minutes. Nobody got paged because the query came from a legitimate database user — it looked like normal application traffic.</p>
+    <p>Here's what happens eventually: the LLM generates a query without a WHERE clause. Or it picks the wrong table. The prompt wasn't specific enough, so the agent does a full table scan across a large table. CPU spikes. Nobody gets paged because the query comes from a legitimate database user — it looks like normal application traffic.</p>
 
-    <p>That's when it hit me. The agent wasn't doing anything malicious. The prompt just wasn't specific enough, so the LLM generated a query without a WHERE clause. Honest mistake. But that "honest mistake" could have been:</p>
+    <p>That's the benign version. The same agent, with the same credentials, could just as easily generate:</p>
 
     <ul>
       <li><code>DROP TABLE users;</code> — the agent had write permissions</li>
@@ -218,7 +218,7 @@ SELECT pg_sleep(999);
 
     <h2>How It Actually Works</h2>
 
-    <p>FaultWall is a single Go binary. No proxy, no sidecar container — just one process that polls <code>pg_stat_activity</code> and inspects active queries.</p>
+    <p>FaultWall is a single Go binary. It's a sidecar — it connects to your Postgres as a monitoring user, polls <code>pg_stat_activity</code>, and inspects active queries. It doesn't sit in the connection path. Your agents talk to Postgres directly, and FaultWall watches from the side.</p>
 
     <p>Every query goes through a real PostgreSQL AST parser — the same C parser that Postgres itself uses, wrapped in Go via <a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a>. No regex. The parser extracts:</p>
 
@@ -265,6 +265,35 @@ POLICY_FILE=./policies.yaml \
 
     <p>All 11 passed on a real Postgres instance. Not unit tests — actual queries, actual enforcement, actual <code>pg_terminate_backend()</code> calls.</p>
 
+    <!-- Terminal demo -->
+    <div style="margin: 32px 0;">
+      <div style="background: #1a1b26; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);">
+        <div style="background: #16161e; padding: 8px 16px; display: flex; align-items: center; gap: 8px;">
+          <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57;display:inline-block;"></span>
+          <span style="width:12px;height:12px;border-radius:50%;background:#febc2e;display:inline-block;"></span>
+          <span style="width:12px;height:12px;border-radius:50%;background:#28c840;display:inline-block;"></span>
+          <span style="color:#71717a;font-size:13px;margin-left:8px;font-family:monospace;">faultwall — enforce mode</span>
+        </div>
+        <div style="padding: 20px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; line-height: 1.7; color: #a9b1d6;">
+          <div><span style="color:#71717a"># Agent connects and tries to access a table outside its mission</span></div>
+          <div style="margin-top:4px;"><span style="color:#7aa2f7">psql&gt;</span> SET application_name = '<span style="color:#9ece6a">agent:cursor-ai:mission:summarize-feedback</span>';</div>
+          <div><span style="color:#7aa2f7">psql&gt;</span> SELECT * FROM <span style="color:#f7768e">public.users</span>;</div>
+          <div style="margin-top:8px;color:#f7768e;">FATAL: terminating connection due to administrator command</div>
+          <div style="margin-top:12px;"><span style="color:#71717a"># FaultWall log:</span></div>
+          <div><span style="color:#bb9af7">Policy enforcement:</span> <span style="color:#f7768e">BLOCKED</span> pid=4821 agent=<span style="color:#9ece6a">cursor-ai</span> mission=<span style="color:#9ece6a">summarize-feedback</span></div>
+          <div>  reason=<span style="color:#f7768e">table_not_in_mission</span> table=public.users op=SELECT</div>
+          <div style="margin-top:12px;"><span style="color:#71717a"># Agent tries a dangerous function</span></div>
+          <div style="margin-top:4px;"><span style="color:#7aa2f7">psql&gt;</span> SELECT <span style="color:#f7768e">pg_read_file</span>('/etc/passwd');</div>
+          <div style="margin-top:8px;color:#f7768e;">FATAL: terminating connection due to administrator command</div>
+          <div style="margin-top:12px;"><span style="color:#bb9af7">Policy enforcement:</span> <span style="color:#f7768e">BLOCKED</span> pid=4822 agent=<span style="color:#9ece6a">cursor-ai</span></div>
+          <div>  reason=<span style="color:#f7768e">blocked_function:pg_read_file</span></div>
+          <div style="margin-top:12px;"><span style="color:#71717a"># Agent stays within policy</span></div>
+          <div style="margin-top:4px;"><span style="color:#7aa2f7">psql&gt;</span> SELECT * FROM <span style="color:#9ece6a">public.feedback</span> WHERE created_at > now() - interval '30 days';</div>
+          <div style="margin-top:4px;color:#9ece6a;">  (47 rows) ✓</div>
+        </div>
+      </div>
+    </div>
+
     <h2>Limitations (Being Honest)</h2>
 
     <p>FaultWall polls <code>pg_stat_activity</code> every ~10 seconds. It's not an inline proxy. This means:</p>
@@ -277,13 +306,23 @@ POLICY_FILE=./policies.yaml \
 
     <p>The honest answer: FaultWall is a seatbelt, not an airbag. It catches the accidental damage that happens 95% of the time — confused agents, bad prompts, scope creep. It won't stop a sophisticated attacker who's already inside your database with full credentials.</p>
 
-    <p>I'm working on an eBPF-based engine that intercepts queries at the kernel level (real-time, zero polling delay) and cryptographic agent identity (signed JWTs instead of application_name). But those aren't shipped yet and I'm not going to pretend they are.</p>
+    <p>I have an early prototype of an eBPF-based engine (private repo, Linux-only) that intercepts queries at the kernel level — real-time, zero polling delay. And cryptographic agent identity via signed JWTs instead of application_name. But neither is shipped and I'm not going to pretend they are.</p>
 
     <h2>Who This Is For</h2>
 
     <p>If you're giving AI agents database access — LangChain tools, Cursor, Claude, internal bots, whatever — and you don't have a policy layer between the agent and your data, you probably should.</p>
 
     <p>FaultWall is MIT licensed, ~3000 lines of Go, no telemetry, no cloud dependency. One binary, one YAML file.</p>
+
+    <p>If you're running agents against Postgres and want to see what they're actually doing:</p>
+
+<pre><code>docker run -e DATABASE_URL=postgres://user:pass@host:5432/db \
+  -e POLICY_FILE=/app/policies.yaml \
+  -e POLICY_ENFORCEMENT=monitor \
+  -p 8080:8080 \
+  ghcr.io/shreyasxv/faultwall:main</code></pre>
+
+    <p>You'll see per-agent metrics and violations at <code>localhost:8080</code> in about 30 seconds. Start in monitor mode, see what your agents do, then flip to enforce when you're ready to block.</p>
 
     <div class="cta">
       <a href="https://github.com/shreyasXV/faultwall">GitHub</a>

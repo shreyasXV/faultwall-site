@@ -169,7 +169,7 @@
 
     <div class="tldr">
       <h3>TL;DR</h3>
-      <p>I built an inline proxy between AI agents and Postgres that parses every SQL query before it reaches the database. Then I wrote an adversarial harness and told an LLM to break through it. First run: 674 successful exfiltrations in 32 rounds. After a week of fixing parser gaps across ~25 AST node types, the latest 100-round run hit zero. The tool is <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — one Go binary, one YAML config, MIT licensed.</p>
+      <p>I built an inline proxy between AI agents and Postgres that checks every SQL query before it hits the database. Then I set up an AI-vs-AI red team — one agent tries to steal data, the proxy tries to stop it, hundreds of rounds, no human in the loop. First run: the attacker got through 674 times. A week of fixes later: zero. The tool is <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — one Go binary, one YAML config, MIT licensed.</p>
     </div>
 
     <h2>The problem</h2>
@@ -211,66 +211,41 @@
 
     <p>I'm not going to spend more time on the architecture because the interesting part is what happened when I tried to break it.</p>
 
-    <h2>Breaking it: round 1</h2>
+    <h2>Letting an AI try to break it</h2>
 
-    <p>I wrote an adversarial harness. An LLM gets the database schema, the policy rules, and one job: exfiltrate data from protected tables. It gets hundreds of attempts per run.</p>
+    <p>This part was inspired by <a href="https://x.com/kaborafn/status/1907807949935001672">Andrej Karpathy's idea of "vibe checking" code with adversarial agents</a> — instead of writing test cases by hand, you point an LLM at your system and tell it to find holes. Except here the stakes are real: the attacker agent's job is to steal data from tables it shouldn't have access to.</p>
 
-    <p>First run, 500 rounds. The attacker found that my parser only extracted table references from FROM and WHERE clauses. Subqueries in ORDER BY, HAVING, LIMIT, OFFSET, and window function clauses went completely unchecked.</p>
+    <p>I gave the attacker the database schema, told it the policy rules, and let it run. Hundreds of rounds, no human in the loop. Think of it like a chess match between two systems: FaultWall enforcing rules, the LLM trying every SQL trick it can think of to get around them.</p>
 
-<pre><code>-- ORDER BY subquery: parser didn't walk this
+    <p>First run, 500 rounds. The attacker figured out pretty quickly that I was only checking for table names in the obvious places — the FROM and WHERE parts of a query. But SQL lets you stick a sub-query almost anywhere. The attacker started hiding data lookups inside ORDER BY clauses, window functions, anywhere I wasn't looking.</p>
+
+<pre><code>-- Sneaking a lookup into ORDER BY
 SELECT 1 FROM public.feedback
-ORDER BY (SELECT password FROM public.users LIMIT 1);
+ORDER BY (SELECT password FROM public.users LIMIT 1);</code></pre>
 
--- Window function frame: missed entirely
-SELECT count(*) OVER (
-  ORDER BY (SELECT ssn FROM public.users LIMIT 1)
-) FROM public.feedback;</code></pre>
+    <p>674 times the attacker got data it shouldn't have. In 32 rounds. It found the blind spot and just kept exploiting it different ways.</p>
 
-    <p>674 successful exfiltrations in 32 rounds. The attacker figured out the blind spot fast and hammered it from every angle.</p>
+    <h2>The week of whack-a-mole</h2>
 
-    <h2>Breaking it: rounds 2-10</h2>
+    <p>I fixed the ORDER BY gap. The attacker immediately found the next one. This pattern repeated for about a week.</p>
 
-    <p>I fixed ORDER BY/HAVING/window traversal. The attacker found new gaps. This went on for about a week.</p>
+    <p>It found that Postgres lets you attach filters to aggregate functions, and I wasn't checking inside those. It found that you can wrap dangerous function calls inside array literals and my parser would skip right over them — that one alone let it steal data 3,303 times before I caught it. It found that instead of calling a blocked function by name, you can cast a string to a special Postgres type called <code>regproc</code> and invoke the function that way, completely dodging the blocklist.</p>
 
-    <p>Round 3: FILTER clauses on aggregate functions. Postgres lets you attach a FILTER to any aggregate, and the expression inside can contain subqueries. My parser didn't recurse into these.</p>
+<pre><code>-- Hiding a blocked function call inside an array
+SELECT ARRAY[(SELECT pg_read_file('/etc/passwd'))];
 
-<pre><code>-- FILTER clause hiding a subquery
-SELECT count(*) FILTER (
-  WHERE EXISTS (SELECT 1 FROM public.users WHERE email LIKE '%@%')
-) FROM public.feedback;</code></pre>
-
-    <p>Round 5: A_ArrayExpr with nested function calls. The attacker built array literals containing calls to blocked functions. This was the worst one. 3,303 successful exfiltrations in a single round before I fixed it.</p>
-
-<pre><code>-- Array expression wrapping a blocked function
-SELECT ARRAY[
-  (SELECT pg_read_file('/etc/passwd'))
-];</code></pre>
-
-    <p>Round 6: regproc and regclass casts. Instead of calling <code>pg_read_file()</code> by name, the attacker cast a string to <code>regproc</code> and invoked the function by OID. The blocklist matched on function names, not OIDs.</p>
-
-<pre><code>-- Bypass function blocklist via regproc cast
+-- Calling a blocked function by its type instead of its name
 SELECT 'pg_read_file'::regproc('/etc/passwd');</code></pre>
 
-    <p>Round 8: XMLTABLE and RangeTableFunc. Postgres has functions that produce virtual tables from XML input, and the expressions inside them can reference real tables. My parser treated these as opaque function calls and didn't recurse into their arguments.</p>
+    <p>The wildest one was XMLTABLE. Postgres has this feature where you can turn XML into table rows, and inside that XML expression you can embed a query that reads from any table. My parser saw it as just a function call and didn't look inside.</p>
 
-<pre><code>-- XMLTABLE producing rows from a subquery
-SELECT x.*
-FROM XMLTABLE(
-  '/row' PASSING (
-    SELECT query_to_xml('SELECT * FROM public.users', true, false, '')
-  )
-  COLUMNS name text PATH 'name'
-) AS x;</code></pre>
+    <p>Each round I learned something new about how many weird corners Postgres's SQL has. Turns out there are about 25-30 places in a SQL statement where you can hide a sub-query or function call. By the end of the week, I'd covered all of them.</p>
 
-    <p>Each round taught me something about Postgres's AST that I didn't know. There are roughly 25-30 expression-bearing node types in the parser output that can contain subqueries or function calls. By round 10 I'd handled most of them: NullTest, BooleanTest, A_Indirection, RangeTableSample, NamedArgExpr, RowExpr, and the rest.</p>
+    <h2>Where it stands now</h2>
 
-    <p>I also expanded the function blocklist from the original 16 functions to 50+, with wildcard patterns (<code>lo_*</code>, <code>dblink*</code>, <code>pg_stat_get_*</code>, <code>query_to_xml*</code>). Added a raw string scanner as a second layer, catching <code>regproc</code> casts and other tricks that the AST traversal alone might miss.</p>
+    <p>Latest run, 100 rounds: zero successful data thefts. The attacker still tries. It generates increasingly creative SQL. But the parser now checks every corner of the query, and the blocklist covers 50+ dangerous Postgres functions.</p>
 
-    <h2>Where it stands</h2>
-
-    <p>Latest 100-round adversarial run: zero successful exfiltrations from protected tables. The attacker generates increasingly creative SQL, but nothing gets through.</p>
-
-    <p>I won't say it's unbreakable. Postgres has an enormous SQL surface. But the problem is finite. There's a bounded set of AST node types, and I've now got test coverage across most of them. Each new bypass class the attacker finds is a smaller gap than the last.</p>
+    <p>I won't say it's unbreakable — Postgres has a huge SQL surface area. But the problem is finite. There's only so many places in a SQL query where you can hide something, and I've now covered most of them. Each new thing the attacker finds is a smaller gap than the last.</p>
 
     <div class="screenshot">
       <img src="dashboard-1.jpg" alt="FaultWall dashboard showing resource overview, enforce mode, and agent activity" style="width:100%; height:auto;" loading="lazy">

@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>I Gave an AI Agent My Database Password — FaultWall</title>
-  <meta name="description" content="What happens when an LLM has real database credentials and the prompt goes sideways. I built an inline proxy, then red-teamed it with an adversarial LLM. 674 bypasses later, here's what I learned.">
+  <meta name="description" content="What happens when an LLM has real database credentials. I built an inline proxy, then let another AI try to break through it.">
   <meta property="og:title" content="I Gave an AI Agent My Database Password">
-  <meta property="og:description" content="What happens when an LLM has real database credentials and the prompt goes sideways.">
+  <meta property="og:description" content="What happens when an LLM has real database credentials. I built an inline proxy, then let another AI try to break through it.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://faultwall.com/blog/ai-agent-database-access">
   <meta property="og:image" content="https://faultwall.com/banner.png">
@@ -81,16 +81,6 @@
       font-size: inherit;
       color: inherit;
     }
-    .tldr {
-      background: #f7f9f9;
-      border: 1px solid #eff3f4;
-      border-radius: 12px;
-      padding: 20px 24px;
-      margin-bottom: 32px;
-    }
-    .tldr h3 { font-size: 14px; font-weight: 700; color: #536471; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-    .tldr p { margin-bottom: 6px; font-size: 15px; color: #0f1419; }
-    .tldr p:last-child { margin-bottom: 0; }
     .callout {
       border-left: 3px solid #1d9bf0;
       padding: 12px 20px;
@@ -109,32 +99,6 @@
     }
     .screenshot img { width: 100%; display: block; }
     .screenshot .caption { font-size: 13px; color: #536471; text-align: center; padding: 10px; background: #f7f9f9; }
-    .terminal {
-      background: #0f1419;
-      border-radius: 12px;
-      overflow: hidden;
-      margin: 24px 0;
-    }
-    .terminal-bar {
-      background: #1c2128;
-      padding: 8px 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-    .terminal-body {
-      padding: 20px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 13px;
-      line-height: 1.7;
-      color: #e7e9ea;
-    }
-    .t-comment { color: #536471; }
-    .t-prompt { color: #1d9bf0; }
-    .t-green { color: #00ba7c; }
-    .t-red { color: #e0245e; }
-    .t-purple { color: #794bc4; }
     .cta {
       margin-top: 40px;
       padding: 28px;
@@ -165,125 +129,78 @@
     <a href="/" class="back">← faultwall.com</a>
 
     <h1>I Gave an AI Agent My Database Password</h1>
-    <div class="meta">April 2026 · 8 min read</div>
+    <div class="meta">April 2026 · 3 min read</div>
 
-    <div class="tldr">
-      <h3>TL;DR</h3>
-      <p>I built an inline proxy between AI agents and Postgres that checks every SQL query before it hits the database. Then I set up an AI-vs-AI red team — one agent tries to steal data, the proxy tries to stop it, hundreds of rounds, no human in the loop. First run: the attacker got through 674 times. A week of fixes later: zero. The tool is <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — one Go binary, one YAML config, MIT licensed.</p>
-    </div>
+    <p>LangChain agent. Claude. Postgres 16 with customer data. Standard stuff. Worked great for three weeks.</p>
 
-    <h2>The problem</h2>
+    <p>Then it generated <code>SELECT * FROM feedback</code> without a WHERE clause. Two million rows. CPU pinned. And the scary part wasn't the bad query — it was realizing what else those same credentials could do.</p>
 
-    <p>I had a LangChain agent talking to Postgres 16. Claude as the LLM, <code>SQLDatabaseToolkit</code>, customer data in the database. It wrote SQL, pulled feedback summaries, joined product tables. Worked fine for three weeks.</p>
-
-    <p>Then it generated <code>SELECT * FROM feedback</code> with no WHERE clause. Two million rows. CPU pinned for three minutes. The connection came from the same <code>agent_user</code> role that runs normal queries all day, so there was nothing in the metrics to distinguish "LLM went sideways" from "application doing its job."</p>
-
-    <p>That was the harmless version. I started poking around with the agent's own credentials:</p>
+    <p>I opened psql with the agent's login and tried a few things:</p>
 
     <ul>
-      <li><code>DROP TABLE users;</code> worked. (Rolled it back.)</li>
-      <li><code>SELECT * FROM customers;</code> returned names, emails, phone numbers. The agent only ever needed the feedback table.</li>
-      <li><code>SELECT pg_read_file('/etc/passwd');</code> read server files through Postgres.</li>
-      <li><code>SELECT * FROM dblink('host=...', 'SELECT 1')</code> made an outbound connection to an external database.</li>
+      <li><code>DROP TABLE users;</code> — worked</li>
+      <li><code>SELECT * FROM customers;</code> — names, emails, phone numbers (agent only needed the feedback table)</li>
+      <li><code>SELECT pg_read_file('/etc/passwd');</code> — read server files through Postgres</li>
+      <li><code>SELECT * FROM dblink('host=...', 'SELECT 1')</code> — outbound connection to an external database</li>
     </ul>
 
-    <p>All valid SQL, all executed with the agent's credentials. This is the confused deputy problem: the agent is authorized, the query it generates might not be, and Postgres doesn't know the difference.</p>
+    <p>All valid SQL. Postgres doesn't know if a human or an LLM wrote the query. The agent is authorized. The query it generates might not be. Nothing in between.</p>
 
-    <p>Postgres roles are static. My agent has the same permissions summarizing feedback as it does deleting records. Row level security helps, but you're trusting the model to include the right predicates. Neither stops <code>pg_sleep(999)</code> or <code>lo_export()</code> or <code>dblink()</code>.</p>
+    <p>Postgres roles don't help because they're static — same permissions for "summarize feedback" and "delete everything." Row level security is better but you're trusting the model to write the right WHERE clause. And nothing stops calls to <code>pg_sleep</code>, <code>lo_export</code>, or <code>dblink</code>.</p>
 
-    <h2>The sidecar that didn't work</h2>
+    <h2>What I built</h2>
 
-    <p>My first attempt was a sidecar. Connect to Postgres as a monitoring user, poll <code>pg_stat_activity</code> every 10 seconds, kill violating queries with <code>pg_terminate_backend()</code>.</p>
+    <p>I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a> — an inline proxy that sits between your agents and Postgres. It speaks the Postgres wire protocol, parses every query using <a href="https://github.com/pganalyze/pg_query_go">Postgres's own C parser</a> (not regex), and blocks anything that violates policy before it reaches the database.</p>
 
-    <p>I thought this was fine. Agent queries tend to run for 5-30 seconds. A 10 second poll should catch most of them.</p>
+    <p>Agents connect to FaultWall. FaultWall connects to Postgres. The agent never gets real database credentials. Each query gets checked against per-agent rules: which tables they can touch, which operations they can run, and a blocklist of 50+ dangerous Postgres functions.</p>
 
-    <p>A friend who's a CTO at a small startup pointed it at their staging database and ran five queries that touched PII. FaultWall caught one. The other four finished between polling intervals. The one it caught was a <code>pg_sleep(15)</code> that was deliberately slow.</p>
+    <p>One Go binary. One YAML config. That's it.</p>
 
-    <p>One out of five. That's not a firewall, that's a coin flip with bad odds. Polling works for audit logs and dashboards. For enforcement, I needed to be in the query path.</p>
+    <h2>Then I tried to break it</h2>
 
-    <h2>The proxy</h2>
+    <p>Inspired by <a href="https://x.com/kaborafn/status/1907807949935001672">Karpathy's idea of vibe-checking with adversarial agents</a>, I set up an AI-vs-AI red team. One agent tries to steal data from protected tables using any SQL trick it can come up with. FaultWall tries to stop it. Hundreds of rounds, no human in the loop.</p>
 
-    <p>FaultWall is now an inline L7 proxy. It speaks the Postgres wire protocol via <a href="https://github.com/jackc/pgproto3">pgproto3</a>, sits between your agents and the database, and parses every query before forwarding it. If the query violates policy, FaultWall returns an error. The query never reaches Postgres.</p>
+    <p>First run: 674 successful data thefts in 32 rounds.</p>
 
-    <p>Agents connect to FaultWall on port 5433. FaultWall connects to Postgres on 5432. Agents never get the real database credentials. Every query goes through <a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a>, which wraps Postgres's own C parser. It extracts the operation type, every table reference (CTEs, subqueries, JOINs, window functions), and every function call. Not regex. The actual parser that Postgres uses to execute queries.</p>
+    <p>The attacker figured out I was only checking the obvious parts of a query. SQL lets you hide a sub-query almost anywhere — inside ORDER BY, inside array literals, inside XML functions. The attacker found every place I wasn't looking.</p>
 
-    <p>Agents identify themselves via <code>application_name</code> in the format <code>agent:&lt;id&gt;:mission:&lt;task&gt;</code>. The proxy checks each query against that agent's allowed tables, allowed operations, and a global blocklist of 50+ dangerous Postgres functions. Handles extended query protocol, TLS, multi-statement strings (each statement parsed individually).</p>
+    <p>So I fixed those. And it found more. For about a week it was whack-a-mole — the attacker finds a new corner of SQL I wasn't checking, I close it, it finds the next one. One round it got through 3,303 times using a single trick (hiding function calls inside arrays).</p>
 
-    <p>I'm not going to spend more time on the architecture because the interesting part is what happened when I tried to break it.</p>
+    <p>After 10 rounds of this: zero successful thefts in 100 rounds. The attacker still tries. Nothing gets through.</p>
 
-    <h2>Letting an AI try to break it</h2>
-
-    <p>This part was inspired by <a href="https://x.com/kaborafn/status/1907807949935001672">Andrej Karpathy's idea of "vibe checking" code with adversarial agents</a> — instead of writing test cases by hand, you point an LLM at your system and tell it to find holes. Except here the stakes are real: the attacker agent's job is to steal data from tables it shouldn't have access to.</p>
-
-    <p>I gave the attacker the database schema, told it the policy rules, and let it run. Hundreds of rounds, no human in the loop. Think of it like a chess match between two systems: FaultWall enforcing rules, the LLM trying every SQL trick it can think of to get around them.</p>
-
-    <p>First run, 500 rounds. The attacker figured out pretty quickly that I was only checking for table names in the obvious places — the FROM and WHERE parts of a query. But SQL lets you stick a sub-query almost anywhere. The attacker started hiding data lookups inside ORDER BY clauses, window functions, anywhere I wasn't looking.</p>
-
-<pre><code>-- Sneaking a lookup into ORDER BY
-SELECT 1 FROM public.feedback
-ORDER BY (SELECT password FROM public.users LIMIT 1);</code></pre>
-
-    <p>674 times the attacker got data it shouldn't have. In 32 rounds. It found the blind spot and just kept exploiting it different ways.</p>
-
-    <h2>The week of whack-a-mole</h2>
-
-    <p>I fixed the ORDER BY gap. The attacker immediately found the next one. This pattern repeated for about a week.</p>
-
-    <p>It found that Postgres lets you attach filters to aggregate functions, and I wasn't checking inside those. It found that you can wrap dangerous function calls inside array literals and my parser would skip right over them — that one alone let it steal data 3,303 times before I caught it. It found that instead of calling a blocked function by name, you can cast a string to a special Postgres type called <code>regproc</code> and invoke the function that way, completely dodging the blocklist.</p>
-
-<pre><code>-- Hiding a blocked function call inside an array
-SELECT ARRAY[(SELECT pg_read_file('/etc/passwd'))];
-
--- Calling a blocked function by its type instead of its name
-SELECT 'pg_read_file'::regproc('/etc/passwd');</code></pre>
-
-    <p>The wildest one was XMLTABLE. Postgres has this feature where you can turn XML into table rows, and inside that XML expression you can embed a query that reads from any table. My parser saw it as just a function call and didn't look inside.</p>
-
-    <p>Each round I learned something new about how many weird corners Postgres's SQL has. Turns out there are about 25-30 places in a SQL statement where you can hide a sub-query or function call. By the end of the week, I'd covered all of them.</p>
-
-    <h2>Where it stands now</h2>
-
-    <p>Latest run, 100 rounds: zero successful data thefts. The attacker still tries. It generates increasingly creative SQL. But the parser now checks every corner of the query, and the blocklist covers 50+ dangerous Postgres functions.</p>
-
-    <p>I won't say it's unbreakable — Postgres has a huge SQL surface area. But the problem is finite. There's only so many places in a SQL query where you can hide something, and I've now covered most of them. Each new thing the attacker finds is a smaller gap than the last.</p>
+    <p>I'm not going to claim it's unbreakable. Postgres has a huge SQL surface. But the problem is finite — there's only so many places in a query where you can hide something, and I've covered most of them.</p>
 
     <div class="screenshot">
-      <img src="dashboard-1.jpg" alt="FaultWall dashboard showing resource overview, enforce mode, and agent activity" style="width:100%; height:auto;" loading="lazy">
+      <img src="dashboard-1.jpg" alt="FaultWall dashboard showing agent activity and enforcement" style="width:100%; height:auto;" loading="lazy">
     </div>
     <div class="screenshot">
-      <img src="dashboard-2.jpg" alt="FaultWall dashboard showing policy violations and per-agent breakdown" style="width:100%; height:auto;" loading="lazy">
-      <div class="caption">Dashboard from a test run with 3 agents. 8 blocked violations, per-agent activity tracking, enforcement mode active.</div>
+      <img src="dashboard-2.jpg" alt="FaultWall dashboard showing blocked violations" style="width:100%; height:auto;" loading="lazy">
+      <div class="caption">Dashboard from a test run — 3 agents, 8 blocked violations, enforcement mode.</div>
     </div>
 
     <h2>What's still broken</h2>
 
-    <p><strong>Agent identity is trivially spoofable.</strong> Agents set <code>application_name</code> to identify themselves, and any Postgres client can set that field to anything. The proxy model helps because agents connect to FaultWall, not Postgres directly, so they never have the real DB credentials. But <code>application_name</code> itself has zero cryptographic guarantees. The real answer is mTLS or signed JWTs per agent. I haven't built either. I shipped without them because identity spoofing requires a compromised agent that already knows about FaultWall's naming convention, and in the confused deputy threat model the agent isn't malicious, it's just generating bad SQL from bad prompts. But if you're thinking "what about a deliberately adversarial agent?" you're right, and this is the biggest open gap.</p>
+    <p>Agent identity is spoofable. Right now agents identify themselves via <code>application_name</code>, which any Postgres client can fake. The proxy helps — agents never get real DB credentials — but it's not cryptographic. mTLS and JWTs are the real answer, and I haven't built them yet. I shipped without them because the threat model here is a confused agent writing bad SQL, not a malicious agent deliberately trying to impersonate another one. But yeah, it's a gap.</p>
 
-    <p><strong>Postgres only.</strong> The parser is Postgres's own C parser compiled into Go via pg_query_go. MySQL, SQLite, SQL Server would each need their own parser. That's a lot of work I haven't done and probably won't until there's demand.</p>
-
-    <p><strong>Parser latency.</strong> Every query gets parsed before reaching the database. In my benchmarks it's under 1ms for typical queries. For agent workloads (a few queries per minute) this is noise. If you're routing high throughput application traffic through it, measure first.</p>
+    <p>Also Postgres only. The parser is Postgres's actual C parser compiled into Go. MySQL would need a different parser. Haven't done it.</p>
 
     <hr class="divider">
 
-    <h2>Try it</h2>
+    <p>If you have agents talking to Postgres:</p>
 
-    <p>Point your agents at the proxy instead of directly at Postgres:</p>
-
-<pre><code># Run FaultWall as an inline proxy
-docker run \
+<pre><code>docker run \
   -e UPSTREAM_URL=postgres://user:pass@your-db:5432/mydb \
   -e PROXY_LISTEN=0.0.0.0:5433 \
-  -e POLICY_FILE=/app/policies.yaml \
   -e POLICY_ENFORCEMENT=monitor \
   -p 5433:5433 -p 8080:8080 \
   ghcr.io/shreyasxv/faultwall:main</code></pre>
 
-    <p>Start in monitor mode. Watch what your agents actually do on <code>localhost:8080</code>. Switch to enforce when you're comfortable.</p>
+    <p>Start in monitor mode. See what your agents actually do. Dashboard at <code>localhost:8080</code>.</p>
 
     <div class="cta">
       <a href="https://github.com/shreyasXV/faultwall" class="cta-btn cta-primary">GitHub</a>
       <a href="https://faultwall.com" class="cta-btn cta-secondary">Learn more</a>
-      <p>MIT Licensed · ~4000 lines of Go · No telemetry · No cloud dependency</p>
+      <p>MIT Licensed · ~4000 lines of Go · No telemetry</p>
     </div>
   </div>
 </body>

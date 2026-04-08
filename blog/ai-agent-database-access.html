@@ -131,6 +131,10 @@
     <h1>I Gave an AI Agent My Database Password</h1>
     <div class="meta">April 2026 · 3 min read</div>
 
+    <div class="callout">
+      <p><strong>TL;DR:</strong> Gave a LangChain/Claude agent Postgres credentials. It could DROP tables, read server files, exfiltrate data — all valid SQL. Built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a>, an inline proxy that parses every query with Postgres's own C parser and blocks policy violations before they hit the database. Red-teamed it with an adversarial AI — 674 bypasses at first, zero after a week of fixes. One Go binary, one YAML config, MIT licensed.</p>
+    </div>
+
     <p>LangChain agent. Claude. Postgres 16 with customer data. Standard stuff. Worked great for three weeks.</p>
 
     <p>Then it generated <code>SELECT * FROM feedback</code> without a WHERE clause. Two million rows. CPU pinned. And the scary part wasn't the bad query — it was realizing what else those same credentials could do.</p>

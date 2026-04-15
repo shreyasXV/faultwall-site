@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>I Gave an AI Agent My Database Password | FaultWall</title>
-  <meta name="description" content="What happens when an LLM has real database credentials. I built an inline proxy, then let another AI try to break through it.">
-  <meta property="og:title" content="I Gave an AI Agent My Database Password">
-  <meta property="og:description" content="What happens when an LLM has real database credentials. I built an inline proxy, then let another AI try to break through it.">
+  <title>We Let Andrej Karpathy's AutoResearch Attack Our Databases | FaultWall</title>
+  <meta name="description" content="We pointed an autonomous AI agent at a PostgreSQL database and told it to steal everything. 60,000+ attack queries. 30 bypass techniques. Here's what happened.">
+  <meta property="og:title" content="We Let Andrej Karpathy's AutoResearch Attack Our Databases">
+  <meta property="og:description" content="60,000+ AI-generated SQL attacks against a Postgres firewall. The agent found 30 ways to steal credentials. Then we stopped every one.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://faultwall.com/blog/ai-agent-database-access">
-  <meta property="og:image" content="https://faultwall.com/banner.png">
+  <meta property="og:image" content="https://faultwall.com/blog/benchmark_chart.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://faultwall.com/banner.png">
+  <meta name="twitter:image" content="https://faultwall.com/blog/benchmark_chart.png">
   <meta name="twitter:site" content="@FaultWall">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -99,6 +99,26 @@
     }
     .screenshot img { width: 100%; display: block; }
     .screenshot .caption { font-size: 13px; color: #536471; text-align: center; padding: 10px; background: #f7f9f9; }
+    .benchmark-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 15px;
+    }
+    .benchmark-table th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid #0f1419;
+      font-weight: 700;
+    }
+    .benchmark-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eff3f4;
+    }
+    .benchmark-table tr:last-child td { border-bottom: none; }
+    .green { color: #00ba7c; font-weight: 700; }
+    .amber { color: #f59e0b; font-weight: 700; }
+    .red { color: #f4212e; font-weight: 700; }
     .cta {
       margin-top: 40px;
       padding: 28px;
@@ -126,71 +146,141 @@
 </head>
 <body>
   <div class="container">
-    <a href="/" class="back">← faultwall.com</a>
+    <a href="/" class="back">&larr; faultwall.com</a>
 
-    <h1>I Gave an AI Agent My Database Password</h1>
-    <div class="meta">April 2026 · 3 min read</div>
+    <h1>We Let Andrej Karpathy's AutoResearch Attack Our Databases</h1>
+    <div class="meta">April 2026 &middot; 6 min read</div>
 
     <div class="callout">
-      <p><strong>TL;DR:</strong> Gave an AI agent Postgres credentials. Built a proxy to stop it from doing damage. Red-teamed it with another AI. 674 bypasses, then zero. <a href="https://github.com/shreyasXV/faultwall">GitHub</a></p>
+      <p><strong>TL;DR:</strong> We pointed an autonomous AI agent at a Postgres database and told it to steal everything. 60,000+ attack queries over 10 days. It found 30 classes of SQL bypass. Then we stopped every one. <a href="https://github.com/shreyasXV/faultwall">GitHub</a></p>
     </div>
 
-    <p>I had a LangChain agent talking to Postgres 16. Claude as the LLM, customer data in the database. It wrote SQL, pulled feedback summaries, joined product tables. Worked fine for three weeks.</p>
+    <p>Your AI agent has your database password. You gave it one. It needs it to do its job. It connects to Postgres, writes SQL, fetches results, and feeds them back into whatever workflow it's running.</p>
 
-    <p>Then it generated <code>SELECT * FROM feedback</code> without a WHERE clause. Two million rows. CPU pinned. And the scary part wasn't the bad query, it was realizing what else those same credentials could do.</p>
+    <p>Here's the question nobody's asking: what SQL is it actually writing?</p>
 
-    <p>I opened psql with the agent's login and tried a few things:</p>
+    <p>We built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a>, an open source SQL firewall for Postgres, to answer that question. But before we shipped it, we wanted to know how it holds up when an AI actively tries to break through. So we took an autonomous AI agent, pointed it at a PostgreSQL database full of fake user credentials, and told it to steal everything it could.</p>
 
-    <ul>
-      <li><code>DROP TABLE users;</code>: worked</li>
-      <li><code>SELECT * FROM customers;</code>: names, emails, phone numbers (agent only needed the feedback table)</li>
-      <li><code>SELECT pg_read_file('/etc/passwd');</code>: read server files through Postgres</li>
-      <li><code>SELECT * FROM dblink('host=...', 'SELECT 1')</code>: outbound connection to an external database</li>
-    </ul>
+    <p>It took four minutes to dump every password hash in the database.</p>
 
-    <p>All valid SQL. Postgres doesn't know if a human or an LLM wrote the query. The agent is authorized. The query it generates might not be. Nothing in between.</p>
+    <h2>The attacker</h2>
 
-    <p>Postgres roles don't help because they're static. Same permissions for "summarize feedback" and "delete everything." Row level security is better but you're trusting the model to write the right WHERE clause. And nothing stops calls to <code>pg_sleep</code>, <code>lo_export</code>, or <code>dblink</code>.</p>
+    <p>We used <a href="https://x.com/karpathy">Andrej Karpathy's</a> AutoResearch as the foundation for our adversarial harness. We customized it into a red team tool: it generates SQL queries designed to exfiltrate data from protected tables, sends them through FaultWall's proxy, and adapts based on what gets blocked.</p>
 
-    <h2>What I built</h2>
+    <p>The test database had four tables. Two were allowed (feedback, products). Two were off limits (users with emails and bcrypt password hashes, payments with transaction amounts). The agent's one job: read the blocked tables.</p>
 
-    <p>I built <a href="https://github.com/shreyasXV/faultwall">FaultWall</a>, an inline proxy that sits between your agents and Postgres. It speaks the Postgres wire protocol, parses every query using <a href="https://github.com/pganalyze/pg_query_go">Postgres's own C parser</a> (not regex), and blocks anything that violates policy before it reaches the database.</p>
+    <p>It doesn't do prompt injection. It does something worse. It writes perfectly valid SQL that happens to steal your data.</p>
 
-    <p>Agents connect to FaultWall. FaultWall connects to Postgres. The agent never gets real database credentials. Each query gets checked against per-agent rules: which tables they can touch, which operations they can run, and a blocklist of 50+ dangerous Postgres functions.</p>
+    <h2>The attack that broke everything</h2>
 
-    <p>One Go binary. One YAML config. That's it.</p>
+    <p>The agent figured out that <code>query_to_xml</code>, a built-in Postgres function, can execute a completely separate SQL query inside a function argument. So it sent this:</p>
 
-    <h2>Then I tried to break it</h2>
+<pre><code>SELECT * FROM public.feedback f,
+  XMLTABLE('/row'
+    PASSING query_to_xml(
+      'SELECT id, username, email, password_hash
+       FROM public.users', true, false, '')
+    COLUMNS
+      id int PATH 'id',
+      username text PATH 'username',
+      email text PATH 'email',
+      pw text PATH 'password_hash') AS x</code></pre>
 
-    <p>Inspired by <a href="https://x.com/kaborafn/status/1907807949935001672">Karpathy's idea of vibe-checking with adversarial agents</a>, I set up an AI-vs-AI red team. One agent tries to steal data from protected tables using any SQL trick it can come up with. FaultWall tries to stop it. Hundreds of rounds, no human in the loop.</p>
+    <p>The outer query touches <code>public.feedback</code>. Allowed table. Nothing suspicious. But the inner function executes <code>SELECT ... FROM public.users</code> on the server side, and Postgres returns every username, email, and bcrypt hash in the table.</p>
 
-    <p>First run: 674 successful data thefts in 32 rounds.</p>
+    <p>Our SQL firewall saw <code>FROM public.feedback</code> and waved it through. The actual exfiltration was hiding inside a function argument that the parser never inspected.</p>
 
-    <p>The attacker figured out I was only checking the obvious parts of a query. SQL lets you hide a sub-query almost anywhere. Inside ORDER BY, inside array literals, inside XML functions. The attacker found every place I wasn't looking.</p>
+    <p>Then the agent escalated. From stealing app data to stealing Postgres system credentials:</p>
 
-    <p>So I fixed those. And it found more. For about a week it was whack-a-mole. The attacker finds a new corner of SQL I wasn't checking, I close it, it finds the next one. One round it got through 3,303 times using a single trick (hiding function calls inside arrays).</p>
+<pre><code>SELECT * FROM public.feedback,
+  XMLTABLE('/row'
+    PASSING query_to_xml(
+      'SELECT usename, passwd FROM pg_catalog.pg_shadow',
+      true, false, '')
+    COLUMNS
+      usename text PATH 'usename',
+      passwd text PATH 'passwd') AS s</code></pre>
 
-    <p>After 10 rounds of this: zero successful thefts in 100 rounds. The attacker still tries. Nothing gets through.</p>
+    <p>That dumps the database server's own authentication secrets. Not app data. The database's own passwords.</p>
 
-    <p>I'm not going to claim it's unbreakable. Postgres has a huge SQL surface. But the problem is finite. There's only so many places in a query where you can hide something, and I've covered most of them.</p>
+    <h2>10 days of getting punched in the face</h2>
+
+    <p>We ran 21 versions of the harness over 10 days. Each round exposed a new class of bypass. Each fix led to a new, more creative attack.</p>
+
+    <p>The pattern repeated: the agent found a place in SQL syntax where our AST parser wasn't looking for table references.</p>
+
+    <p>Subqueries hidden in ORDER BY clauses. Nested COALESCE and GREATEST calls. ARRAY constructors wrapping subqueries. UPDATE statements with exfiltration in the SET clause. Window functions. FILTER clauses. XMLTABLE. About 30 expression-bearing AST node types in PostgreSQL's grammar, and we had to walk every single one.</p>
+
+    <p>Some rounds were ugly. One combination, <code>A_ArrayExpr</code> plus <code>NamedArgExpr</code>, let through 3,303 exfiltrations before we caught it. We'd fix that, and the agent would pivot to ORDER BY subqueries (1,067 bypasses) or UPDATE SET subqueries (452). Whack-a-mole, except each mole is stealing your customer data.</p>
+
+    <p>We switched from a blocklist (17 known dangerous functions) to an allowlist (only permit known-safe functions). That alone killed entire categories of bypass.</p>
+
+    <p>By version 20, the agent couldn't steal anything real. Over 60,000 attack queries across all runs. 0 actual data exfiltrations in the final versions. The remaining "bypasses" were all VALUES-alias spoofing, where the agent fabricates data with VALUES clauses and aliases them as blocked table names. Creative, but not real data leakage.</p>
+
+    <h2>What about RLS? What about pgbouncer?</h2>
+
+    <p>The first thing anyone says is "just use Row Level Security." So we tested that.</p>
+
+    <p>Same attack set. Proper RLS setup: a restricted <code>agent_role</code>, policies denying all access to protected tables, grants only on allowed tables.</p>
+
+    <p>We stripped out VALUES-alias attacks from both sides. Queries where the agent fabricates data with VALUES clauses instead of reading real tables. Counting those against RLS but not against our firewall would be dishonest. Here's what the normalized numbers look like:</p>
+
+    <table class="benchmark-table">
+      <thead>
+        <tr>
+          <th>Defense</th>
+          <th>Block Rate</th>
+          <th>Real Info Leaks</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FaultWall</td>
+          <td class="green">100%</td>
+          <td class="green">0</td>
+        </tr>
+        <tr>
+          <td>Postgres RLS</td>
+          <td class="amber">78.6%</td>
+          <td class="amber">103</td>
+        </tr>
+        <tr>
+          <td>App-layer filtering (ORM)</td>
+          <td class="red">0%</td>
+          <td class="red">482</td>
+        </tr>
+        <tr>
+          <td>pgbouncer</td>
+          <td class="red">0%</td>
+          <td class="red">482</td>
+        </tr>
+      </tbody>
+    </table>
 
     <div class="screenshot">
-      <img src="dashboard-1.jpg" alt="FaultWall dashboard showing agent activity and enforcement" style="width:100%; height:auto;" loading="lazy">
+      <img src="benchmark_chart.png" alt="Benchmark comparison: FaultWall 100% vs Postgres RLS 78.6% vs App-Layer 0% vs pgbouncer 0%" loading="lazy">
+      <div class="caption">Normalized benchmark: 482 real attack queries, VALUES-alias attacks stripped from both sides.</div>
     </div>
-    <div class="screenshot">
-      <img src="dashboard-2.jpg" alt="FaultWall dashboard showing blocked violations" style="width:100%; height:auto;" loading="lazy">
-      <div class="caption">Dashboard from a test run. 3 agents, 8 blocked violations, enforcement mode.</div>
-    </div>
+
+    <p>The 103 queries that got past RLS weren't obscure edge cases. <code>pg_stat_activity</code> shows every running query on the server. <code>pg_stat_statements</code> shows query history. <code>schema_to_xml</code> dumps the entire schema structure. <code>aclexplode</code> reveals table permissions. <code>pg_cancel_backend</code> lets you kill other connections.</p>
+
+    <p>RLS doesn't touch any of these because they aren't table access. They're function calls and system catalog queries. RLS was built to restrict row visibility, not to be a security boundary against something that's actively trying to get around it.</p>
+
+    <h2>What we actually learned</h2>
+
+    <p>The attack surface is finite. Postgres's SQL grammar has roughly 25 to 30 expression-bearing AST node types where a subquery or function call can hide. Miss one, and an adversarial agent will find it. Ours did, repeatedly, for 10 straight days.</p>
+
+    <p>But finite means solvable. 30 AST nodes. We walked every one. Did we catch literally everything? Probably not. There's some weird edge case in a node type we haven't seen yet. But 60,000+ attack queries and 0 exfiltrations is the best signal we have.</p>
 
     <h2>What's still broken</h2>
 
-    <p>Agent identity is spoofable. Right now agents identify themselves via <code>application_name</code>, which any Postgres client can fake. The proxy helps because agents never get real DB credentials, but it's not cryptographic. mTLS and JWTs are the real answer, and I haven't built them yet. I shipped without them because the threat model here is a confused agent writing bad SQL, not a malicious agent deliberately trying to impersonate another one. But yeah, it's a gap.</p>
+    <p>Agent identity is spoofable. Right now agents identify themselves via <code>application_name</code>, which any Postgres client can fake. The proxy helps because agents never get real DB credentials, but it's not cryptographic. mTLS and JWTs are on the roadmap.</p>
 
-    <p>Also Postgres only. The parser is Postgres's actual C parser compiled into Go. MySQL would need a different parser. Haven't done it.</p>
+    <p>Also Postgres only. The parser is Postgres's actual C parser compiled into Go. MySQL would need a different parser.</p>
 
     <hr class="divider">
 
-    <p>If you have agents talking to Postgres:</p>
+    <p>FaultWall is a single-binary Go proxy. One YAML config. Point your agents at it instead of Postgres directly:</p>
 
 <pre><code>docker run \
   -e UPSTREAM_URL=postgres://user:pass@your-db:5432/mydb \
@@ -201,10 +291,18 @@
 
     <p>Start in monitor mode. See what your agents actually do. Dashboard at <code>localhost:8080</code>.</p>
 
+    <div class="screenshot">
+      <img src="dashboard-1.jpg" alt="FaultWall dashboard showing agent activity and enforcement" loading="lazy">
+    </div>
+    <div class="screenshot">
+      <img src="dashboard-2.jpg" alt="FaultWall dashboard showing blocked violations" loading="lazy">
+      <div class="caption">Dashboard from a test run. 3 agents, 8 blocked violations, enforcement mode.</div>
+    </div>
+
     <div class="cta">
       <a href="https://github.com/shreyasXV/faultwall" class="cta-btn cta-primary">GitHub</a>
       <a href="https://faultwall.com" class="cta-btn cta-secondary">Learn more</a>
-      <p>MIT Licensed · ~4000 lines of Go · No telemetry</p>
+      <p>MIT Licensed &middot; ~4000 lines of Go &middot; No telemetry</p>
     </div>
   </div>
 </body>

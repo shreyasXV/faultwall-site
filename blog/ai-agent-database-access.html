@@ -272,12 +272,6 @@
 
     <p>But finite means solvable. 30 AST nodes. We walked every one. Did we catch literally everything? Probably not. There's some weird edge case in a node type we haven't seen yet. But 60,000+ attack queries and 0 exfiltrations is the best signal we have.</p>
 
-    <h2>What's still broken</h2>
-
-    <p>Agent identity is spoofable. Right now agents identify themselves via <code>application_name</code>, which any Postgres client can fake. The proxy helps because agents never get real DB credentials, but it's not cryptographic. mTLS and JWTs are on the roadmap.</p>
-
-    <p>Also Postgres only. The parser is Postgres's actual C parser compiled into Go. MySQL would need a different parser.</p>
-
     <hr class="divider">
 
     <p>FaultWall is a single-binary Go proxy. One YAML config. Point your agents at it instead of Postgres directly:</p>

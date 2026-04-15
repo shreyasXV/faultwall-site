@@ -127,13 +127,19 @@
     }
 
     /* ── Scroll Reveal ── */
+    /* Default: visible (fallback if JS fails) */
     .reveal {
-      opacity: 0;
-      transform: translateY(40px) scale(0.98);
+      opacity: 1;
+      transform: none;
       transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
                   transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .reveal.visible {
+    /* JS adds this class to body, then hides reveals for animation */
+    .js-ready .reveal {
+      opacity: 0;
+      transform: translateY(40px) scale(0.98);
+    }
+    .js-ready .reveal.visible {
       opacity: 1;
       transform: translateY(0) scale(1);
     }
@@ -1476,13 +1482,17 @@
 
 <script>
   // ── Scroll Reveal with IntersectionObserver ──
+  // Mark body as JS-ready so reveal animations activate
+  document.documentElement.classList.add('js-ready');
+  
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('visible');
+        observer.unobserve(entry.target); // stop observing once visible
       }
     });
-  }, { threshold: 0.06, rootMargin: '0px 0px -60px 0px' });
+  }, { threshold: 0.01, rootMargin: '0px 0px -20px 0px' });
 
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 

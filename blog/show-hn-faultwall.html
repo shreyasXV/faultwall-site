@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Show HN: FaultWall – Give your AI agents a database password | FaultWall</title>
+  <meta name="description" content="FaultWall is an open source SQL firewall for AI agents. Per-agent, per-task Postgres policies. Drops in as a proxy. Here is how to set it up in 60 seconds.">
+  <meta property="og:title" content="Show HN: FaultWall – Give your AI agents a database password">
+  <meta property="og:description" content="Open source SQL firewall for AI agents. Per-agent policies, real-time enforcement, single Go binary.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://faultwall.com/blog/show-hn-faultwall">
+  <meta property="og:image" content="https://faultwall.com/blog/dashboard.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://faultwall.com/blog/dashboard.jpg">
+  <meta name="twitter:site" content="@FaultWall">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #ffffff;
+      color: #0f1419;
+      line-height: 1.75;
+      font-size: 17px;
+    }
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 60px 20px;
+    }
+    .back { color: #536471; text-decoration: none; font-size: 14px; }
+    .back:hover { color: #1d9bf0; }
+    h1 {
+      font-size: 2em;
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 20px 0 6px;
+      color: #0f1419;
+    }
+    .meta {
+      color: #536471;
+      font-size: 14px;
+      margin-bottom: 32px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid #eff3f4;
+    }
+    h2 {
+      font-size: 1.3em;
+      font-weight: 700;
+      margin: 40px 0 12px;
+      color: #0f1419;
+    }
+    p { margin-bottom: 16px; color: #0f1419; }
+    a { color: #1d9bf0; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: #f7f9f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.88em;
+      color: #0f1419;
+    }
+    pre {
+      background: #0f1419;
+      color: #e7e9ea;
+      border-radius: 12px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 20px 0;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
+    }
+    .callout {
+      border-left: 3px solid #1d9bf0;
+      padding: 12px 20px;
+      margin: 20px 0;
+      background: #f7f9f9;
+      border-radius: 0 8px 8px 0;
+    }
+    .callout p { margin-bottom: 0; font-size: 15px; }
+    ul { margin: 0 0 16px 20px; }
+    li { margin-bottom: 6px; }
+    .screenshot {
+      margin: 24px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #eff3f4;
+    }
+    .screenshot img { width: 100%; display: block; }
+    .screenshot .caption { font-size: 13px; color: #536471; text-align: center; padding: 10px; background: #f7f9f9; }
+    .cta {
+      margin-top: 40px;
+      padding: 28px;
+      background: #f7f9f9;
+      border: 1px solid #eff3f4;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .cta-btn {
+      display: inline-block;
+      padding: 10px 28px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+      margin: 4px;
+    }
+    .cta-primary { background: #0f1419; color: #fff; }
+    .cta-primary:hover { background: #1c2733; text-decoration: none; }
+    .cta-secondary { background: #fff; color: #0f1419; border: 1px solid #cfd9de; }
+    .cta-secondary:hover { background: #f7f9f9; text-decoration: none; }
+    .cta p { color: #536471; font-size: 13px; margin-top: 10px; margin-bottom: 0; }
+    .divider { border: none; border-top: 1px solid #eff3f4; margin: 40px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back">&larr; faultwall.com</a>
+
+    <h1>Show HN: Give your AI agents a database password</h1>
+    <p style="color: #536471; font-size: 1.05em; font-weight: 600; margin-bottom: 0;">An open source SQL firewall for AI agents. Per-agent, per-task policies. Single Go binary. Drops in as a Postgres proxy.</p>
+    <div class="meta">April 2026 &middot; 4 min read</div>
+
+    <div class="callout">
+      <p><strong>TL;DR:</strong> FaultWall is a single Go binary you put between your AI agent and Postgres. It parses every query with the real Postgres C parser and enforces a YAML policy per-agent per-task. ~0.14ms overhead on managed Postgres. MIT licensed. <a href="https://github.com/shreyasXV/faultwall">GitHub</a></p>
+    </div>
+
+    <p>I kept giving Cursor and a few other agents direct Postgres access. Most of the time it was fine. Sometimes it wasn't. One query pinned CPU for three minutes. One (in a sandbox, thankfully) tried a cross join across three big tables that would have returned a few hundred million rows.</p>
+
+    <p>None of that was malicious. The agent did what its prompt said. Postgres did what the agent asked. Nothing in between knew the difference between "summarize today's feedback" and "enumerate the database."</p>
+
+    <p>That missing layer is what FaultWall is.</p>
+
+    <h2>What it does</h2>
+
+    <p>FaultWall is a Go binary that sits between your agent and Postgres. Every query gets parsed through the real Postgres C parser (via <a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a>) and checked against a YAML policy before it hits the database.</p>
+
+    <p>You define what each agent is allowed to do on each task:</p>
+
+<pre><code>agents:
+  support-bot:
+    missions:
+      summarize-feedback:
+        allowed_tables: [public.feedback]
+        allowed_operations: [SELECT]
+      update-order-status:
+        allowed_tables: [public.orders]
+        allowed_operations: [SELECT, UPDATE]</code></pre>
+
+    <p>The agent tells FaultWall which task it is on using <code>application_name</code> at connect time (e.g. <code>agent:support-bot:mission:summarize-feedback</code>). If <code>support-bot</code> tries to read <code>public.users</code> while it is supposed to be summarizing feedback, the query is blocked and logged.</p>
+
+    <div class="screenshot">
+      <img src="dashboard.jpg" alt="FaultWall dashboard showing live queries by agent and mission" loading="lazy">
+      <div class="caption">Dashboard: live queries grouped by agent and mission, policy hits highlighted.</div>
+    </div>
+
+    <h2>Dangerous functions, blocked by default</h2>
+
+    <p>On top of table-level policies, FaultWall blocks about 50 Postgres functions that kept showing up in agent exfiltration paths when we red-teamed this:</p>
+
+    <ul>
+      <li><code>pg_read_file</code>, <code>pg_read_binary_file</code> — read arbitrary files off the server</li>
+      <li><code>lo_export</code>, <code>lo_import</code> — dump DB contents to disk</li>
+      <li><code>dblink</code>, <code>postgres_fdw_*</code> — exfiltrate to external databases</li>
+      <li><code>query_to_xml</code>, <code>schema_to_xml</code> — serialize whole schemas (the RLS bypass story)</li>
+      <li><code>copy ... from program</code> — shell execution</li>
+    </ul>
+
+    <p>Agents can be allowlisted per function if they legitimately need one. Default is deny.</p>
+
+    <div class="screenshot">
+      <img src="dashboard-1.jpg" alt="FaultWall dashboard showing blocked function calls" loading="lazy">
+      <div class="caption">Blocked function calls, grouped by agent.</div>
+    </div>
+
+    <h2>Monitor first, enforce when you are ready</h2>
+
+    <p>Flipping straight to enforce mode in production is scary. So there are two modes:</p>
+
+    <ul>
+      <li><strong>Monitor</strong> — log every policy violation, don't block</li>
+      <li><strong>Enforce</strong> — block and return a Postgres error to the agent</li>
+    </ul>
+
+    <p>Run monitor for a week. Watch the dashboard. Find the queries that surprised you. Tune the policy. Then switch.</p>
+
+    <div class="screenshot">
+      <img src="dashboard-2.jpg" alt="Monitor mode audit log showing what agents actually did" loading="lazy">
+      <div class="caption">Monitor-mode audit log. What your agents are actually doing before you block anything.</div>
+    </div>
+
+    <h2>Setup in 60 seconds</h2>
+
+    <p>Pull the image, point it at your database, set a policy file, expose the port:</p>
+
+<pre><code>docker run \
+  -e UPSTREAM_URL=postgres://user:pass@your-db:5432/mydb \
+  -e PROXY_LISTEN=0.0.0.0:5433 \
+  -e POLICY_PATH=/policies.yaml \
+  -e POLICY_ENFORCEMENT=monitor \
+  -v $(pwd)/policies.yaml:/policies.yaml \
+  -p 5433:5433 -p 8080:8080 \
+  ghcr.io/shreyasxv/faultwall:main</code></pre>
+
+    <p>Point your agent at <code>localhost:5433</code> instead of Postgres. Dashboard at <code>localhost:8080</code>. No SDK, no library, no app code changes.</p>
+
+    <p>Tested on RDS, Aurora, Neon, Supabase, Cloud SQL, pgBouncer, and self-hosted. One client-side flag (<code>channel_binding=disable</code>) is needed for some managed PG setups — inherent to any transparent TLS proxy, documented in the <a href="https://github.com/shreyasXV/faultwall#compatibility">compatibility guide</a>.</p>
+
+    <p>Overhead is about 0.14ms per query on managed Postgres. For LLM-bound workloads (1–10 QPS, LLM dominates latency) it is invisible.</p>
+
+    <h2>Did we actually test this?</h2>
+
+    <p>Yes. We pointed an autonomous AI agent (built on <a href="https://x.com/karpathy">Karpathy's</a> AutoResearch) at a test database and told it to steal everything. 60,000+ attack queries across 21 rounds. Every round exposed a new class of bypass — subqueries hidden in ORDER BY, UPDATE SET, XMLTABLE, COALESCE, ARRAY constructors, window FILTER clauses. Postgres's grammar has about 30 expression-bearing AST node types where this pattern applies. We walked every one.</p>
+
+    <p>Final versions: 0 real data exfiltrations. Full writeup with benchmarks vs RLS, pgbouncer, and ORM filtering: <a href="/blog/ai-agent-database-access">here</a>.</p>
+
+    <h2>Honest status</h2>
+
+    <p>Single Go binary, about 3,600 lines, MIT licensed. I have been running it against my own test agents for a few weeks. The policy engine, dashboard, and managed-PG wire-level compatibility all hold up. Things not built yet: post-connect JWT identity (<code>application_name</code> is spoofable — fine for confused-agent threat model, not fine for adversarial insiders), a Kubernetes operator, anything other than Postgres. It is v1. Tell me where it breaks.</p>
+
+    <hr class="divider">
+
+    <p>If you are already giving agents database access, I would genuinely like to hear what your setup looks like. Especially the parts that make you nervous. Open to feedback, issues, PRs.</p>
+
+    <div class="cta">
+      <a href="https://github.com/shreyasXV/faultwall" class="cta-btn cta-primary">⭐ Star on GitHub</a>
+      <a href="https://faultwall.com" class="cta-btn cta-secondary">Learn more</a>
+      <p>MIT Licensed &middot; Single Go binary &middot; No telemetry</p>
+    </div>
+  </div>
+</body>
+</html>

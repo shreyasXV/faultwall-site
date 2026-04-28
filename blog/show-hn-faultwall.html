@@ -164,40 +164,35 @@
     <a href="/" class="back">&larr; faultwall.com</a>
 
     <h1>Monitor and block what your AI agents do to your database</h1>
-    <p style="color: #536471; font-size: 1.05em; font-weight: 600; margin-bottom: 0;">An open source observability + firewall layer for AI agents on Postgres. See every query. Block the bad ones. Sleep at night.</p>
+    <p style="color: #536471; font-size: 1.05em; font-weight: 600; margin-bottom: 0;">An open source firewall for AI agents on Postgres. Logs every query. Blocks the ones you didn't authorize.</p>
     <div class="meta">April 2026 &middot; 4 min read</div>
 
     <div class="callout">
-      <p><strong>TL;DR:</strong> You gave an AI agent your database password. Now you have no idea what it's actually running. FaultWall is a single Go binary that sits in front of Postgres, shows you every query each agent runs, and blocks the ones that violate a YAML policy. ~0.14ms overhead on managed Postgres. MIT licensed. <a href="https://github.com/shreyasXV/faultwall">GitHub</a></p>
+      <p><strong>TL;DR:</strong> Your AI agent has your database password. You probably don't know what it's running most of the time. FaultWall is a single Go binary that sits in front of Postgres, logs every query per agent, and blocks the ones that break a YAML policy. Around 0.14ms per query on managed PG. MIT licensed. <a href="https://github.com/shreyasXV/faultwall">GitHub</a>.</p>
     </div>
 
-    <p>I kept giving Cursor and a few other agents direct Postgres access. Most of the time it was fine. Sometimes it wasn't. One query pinned CPU for three minutes. One (in a sandbox, thankfully) tried a cross join across three big tables that would have returned a few hundred million rows.</p>
+    <p>I gave Cursor direct Postgres access for a few weeks and watched it work. Most of the queries were fine. A few were not. One pinned CPU for three minutes. Another, in a sandbox, tried a cross join across three big tables that would have returned a few hundred million rows before finishing.</p>
 
-    <p>None of that was malicious. The agent did what its prompt said. Postgres did what the agent asked. I had no visibility into any of it until the page came in — and no ability to stop it mid-flight.</p>
+    <p>Nothing about that was malicious. The prompt said what it said. The agent did what it was told. I had no idea any of it was happening until the slow query showed up in <code>pg_stat_activity</code>, and by then the damage (to CPU, not data, that time) was done.</p>
 
-    <p>That's the gap FaultWall fills. Two jobs in one binary:</p>
+    <p>FaultWall does two things. It logs every query the agent runs, grouped by which agent and which task. And it blocks anything that doesn't match a policy you wrote. That's it.</p>
 
-    <ol style="margin: 0 0 16px 20px;">
-      <li><strong>Observability</strong> — see every query, grouped by agent and task, in real time.</li>
-      <li><strong>Enforcement</strong> — block queries that violate a policy before they hit the database.</li>
-    </ol>
+    <p>You can leave it in monitor-only mode for as long as you want. A lot of people probably will. Watching what your agents do all day is often the scary part.</p>
 
-    <p>You can run it in monitor-only mode forever if you just want the visibility. Most teams do that first, then flip on enforcement once they trust what they're seeing.</p>
+    <h2>Why I cared enough to build it</h2>
 
-    <h2>Why this matters (the peace-of-mind angle)</h2>
+    <p>Postgres roles are the obvious answer and they're not good enough on their own. The same role covers every task an agent does, so a bot that summarizes feedback has the same permissions as when it updates orders. RLS helps for row-level reads but doesn't cover function-based leaks like <code>query_to_xml</code>, <code>lo_export</code>, or <code>dblink</code>. Those aren't table reads; RLS never looks at them.</p>
 
-    <p>An agent with a Postgres password is one bad prompt away from <code>DROP TABLE users</code>. Postgres roles are too blunt — the same role covers every task the agent does. RLS handles row-level access but misses function-based exfiltration (<code>query_to_xml</code>, <code>lo_export</code>, <code>dblink</code>, <code>copy ... from program</code>).</p>
-
-    <p>What you actually want: <strong>this agent, on this task, can do exactly these things and nothing else — and I want to see the audit trail before I go to bed.</strong> That's what FaultWall gives you.</p>
+    <p>What I wanted was simple: this agent, on this task, can do exactly these things. And I want the query log to look at in the morning.</p>
 
     <div class="screenshot">
-      <img src="dashboard-hero.jpg" alt="FaultWall dashboard showing live queries grouped by agent, with mission tracking and policy hits" loading="lazy">
-      <div class="caption">Live dashboard: every query, every agent, every task. Blocked queries highlighted.</div>
+      <img src="dashboard-hero.jpg" alt="FaultWall dashboard showing live queries grouped by agent and task, with blocked queries highlighted" loading="lazy">
+      <div class="caption">Live dashboard. Queries grouped by agent and task. Blocked ones are red.</div>
     </div>
 
-    <h2>What the policy looks like</h2>
+    <h2>The policy</h2>
 
-    <p>Policies are YAML. Per-agent, per-task. Each policy is explicit about what's allowed <em>and</em> what's blocked:</p>
+    <p>YAML. Per-agent, per-task. The shape is:</p>
 
 <pre><code>agents:
   support-bot:
@@ -205,45 +200,32 @@
       summarize-feedback:
         allowed_tables: [public.feedback]
         allowed_operations: [SELECT]
-        blocked_tables: [public.users, public.payments, pg_catalog.*]
-        blocked_functions:
-          - pg_read_file
-          - lo_export
-          - dblink
-          - query_to_xml
-          - schema_to_xml
-          - copy_from_program
       update-order-status:
         allowed_tables: [public.orders]
         allowed_operations: [SELECT, UPDATE]
-        blocked_tables: [public.users, public.payments]
         blocked_columns:
-          public.orders: [internal_notes, fraud_score]
+          public.orders: [internal_notes]</code></pre>
 
-global:
-  blocked_functions_default: deny_all_except_allowlist
-  allowed_functions: [now, count, sum, avg, length, coalesce]</code></pre>
+    <p>The agent tells FaultWall which task it's on using <code>application_name</code> at connect time (<code>agent:support-bot:mission:summarize-feedback</code>). Every query runs through the real Postgres C parser (<a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a>) and gets checked against the policy. If it doesn't match, FaultWall kills the query and logs it with the full SQL, the agent, the task, and why it failed.</p>
 
-    <p>The agent tells FaultWall which task it's on using <code>application_name</code> at connect time (e.g. <code>agent:support-bot:mission:summarize-feedback</code>). Every query is parsed with the real Postgres C parser (via <a href="https://github.com/pganalyze/pg_query_go">pg_query_go</a>) and checked against the policy before it reaches the database. If it fails, FaultWall kills it and logs the attempt with the full query, agent, task, and reason.</p>
+    <p>There's also a default blocklist of about 50 Postgres functions that showed up repeatedly in agent exfiltration paths during testing: <code>pg_read_file</code>, <code>lo_export</code>, <code>dblink</code>, <code>query_to_xml</code>, <code>copy ... from program</code>, and friends. Per-agent allowlists if you legitimately need one.</p>
 
-    <h2>Monitor mode — see everything before you block anything</h2>
+    <h2>Monitor first</h2>
 
-    <p>Flipping straight to enforce mode in production is scary, so monitor mode is the default. Every policy violation gets logged but nothing is blocked. Run it for a week. Watch the dashboard. Find the queries you didn't expect. Tune the policy. Then switch to enforce.</p>
+    <p>Flipping straight to enforce in production is scary, so monitor mode is the default. Log everything, block nothing. Run it a week, watch the dashboard, find the queries that surprised you, tune the policy. Then flip to enforce.</p>
 
     <div class="screenshot">
-      <img src="dashboard-monitor.png" alt="Monitor-mode audit log showing violations without blocking" loading="lazy">
-      <div class="caption">Monitor mode: what your agents actually do before you block anything.</div>
+      <img src="dashboard-monitor.png" alt="Monitor-mode audit log showing policy violations without blocking" loading="lazy">
+      <div class="caption">Monitor mode: what's actually happening before you block anything.</div>
     </div>
 
-    <h2>How it stacks up vs RLS, pgbouncer, and ORM filtering</h2>
+    <h2>How it compares to RLS, pgbouncer, and ORM filtering</h2>
 
-    <p>Before shipping this I ran 60,000+ adversarial SQL queries (generated by an AI red-team agent built on <a href="https://x.com/karpathy">Karpathy's</a> AutoResearch) against four setups: FaultWall, Postgres Row Level Security, an ORM-based filter layer, and pgbouncer. Same attacks, same test database, same dataset. VALUES-alias spoofing stripped from both sides to keep the comparison honest.</p>
+    <p>Before shipping I pointed an adversarial AI agent (built on <a href="https://x.com/karpathy">Karpathy's</a> AutoResearch harness) at a test database and told it to steal everything. 60,000 attack queries across 10 days. Same attacks run against four setups: FaultWall, Postgres RLS, ORM-layer filtering, and pgbouncer.</p>
 
     <div class="callout">
-      <p><strong>Methodology:</strong> 482 normalized attack queries after stripping VALUES-alias spoofing from both sides. Test DB with 4 tables (2 allowed, 2 protected with fake creds + bcrypt hashes). Agent's goal: read the protected tables. Each defense tested in isolation against the same query set. <a href="/blog/ai-agent-database-access">Full writeup with attack examples and raw numbers &rarr;</a></p>
+      <p><strong>Methodology:</strong> 482 normalized attacks after stripping VALUES-alias spoofing from both sides. Test DB with 4 tables, 2 allowed and 2 protected (fake creds + bcrypt hashes). Agent's goal: read the protected tables. Each defense tested in isolation against the same query set. <a href="/blog/ai-agent-database-access">Full writeup with attack examples and raw numbers &rarr;</a></p>
     </div>
-
-    <p>Here's what stopped the attacks:</p>
 
     <table class="benchmark-table">
       <thead>
@@ -278,19 +260,19 @@ global:
     </table>
 
     <div class="screenshot">
-      <img src="benchmark_chart.png" alt="Benchmark comparison: FaultWall 100% vs Postgres RLS 78.6% vs App-Layer 0% vs pgbouncer 0%" loading="lazy">
+      <img src="benchmark_chart.png" alt="Benchmark comparison: FaultWall 100 percent vs Postgres RLS 78.6 percent vs App-Layer 0 percent vs pgbouncer 0 percent" loading="lazy">
       <div class="caption">Normalized benchmark across 482 real attack queries.</div>
     </div>
 
-    <p>Short version: <strong>RLS is necessary but not sufficient</strong>. It catches row-level table access but misses function-based exfiltration paths (<code>pg_stat_activity</code>, <code>schema_to_xml</code>, <code>aclexplode</code>, <code>pg_cancel_backend</code>) — because those aren't table reads, they're function calls against system catalogs. Use RLS and FaultWall together. Full red-team writeup is <a href="/blog/ai-agent-database-access">here</a>.</p>
+    <p>The short version is that RLS is necessary but not enough. It catches row-level reads but misses function-based exfiltration: <code>pg_stat_activity</code>, <code>schema_to_xml</code>, <code>aclexplode</code>, <code>pg_cancel_backend</code>. Those are function calls against system catalogs, not table reads, so RLS never sees them. Use RLS and FaultWall together. Full red-team writeup is <a href="/blog/ai-agent-database-access">here</a>.</p>
 
     <h2>Honest status</h2>
 
-    <p>Single Go binary, about 3,600 lines, MIT licensed. I've been running it against my own test agents for a few weeks. The policy engine, dashboard, and managed-PG wire-level compatibility all hold up. Things not built yet: post-connect JWT identity (<code>application_name</code> is spoofable — fine for confused-agent threat model, not fine for adversarial insiders), a Kubernetes operator, anything other than Postgres. It's v1. Tell me where it breaks.</p>
+    <p>Single Go binary, around 3,600 lines, MIT. I've been running it against my own agents for a few weeks. The policy engine, dashboard, and managed-PG compatibility hold up. Things I haven't built: post-connect JWT identity (<code>application_name</code> is spoofable, which is okay against confused agents but not against adversarial insiders), a Kubernetes operator, anything that isn't Postgres. It's v1. Tell me where it breaks.</p>
 
-    <h2>Works with every managed Postgres you'd actually use</h2>
+    <h2>Managed Postgres compatibility</h2>
 
-    <p>Transparent TLS proxy, wire-level compatibility. Validated end-to-end against:</p>
+    <p>Transparent TLS proxy, wire-level. Tested end-to-end against:</p>
 
     <div class="compat-grid">
       <div>AWS RDS</div>
@@ -301,9 +283,9 @@ global:
       <div>Self-hosted PG</div>
     </div>
 
-    <p>Also works through <strong>pgBouncer</strong> (transaction and session pooling both tested). One client-side flag (<code>channel_binding=disable</code> in your connection string) is required for some managed PG setups — inherent to any transparent TLS proxy that sits between your driver and Postgres. Every SCRAM-aware driver supports the flag. Documented in the <a href="https://github.com/shreyasXV/faultwall#compatibility">compatibility guide</a>.</p>
+    <p>Also works through pgBouncer in both transaction and session pooling modes. For some managed PG setups you'll need <code>channel_binding=disable</code> in your connection string. That's inherent to any transparent TLS proxy sitting between your driver and Postgres, and every SCRAM-aware driver supports the flag. It's in the <a href="https://github.com/shreyasXV/faultwall#compatibility">compat guide</a>.</p>
 
-    <h2>Setup in 60 seconds</h2>
+    <h2>Setup</h2>
 
 <pre><code>docker run \
   -e UPSTREAM_URL=postgres://user:pass@your-db:5432/mydb \
@@ -314,16 +296,16 @@ global:
   -p 5433:5433 -p 8080:8080 \
   ghcr.io/shreyasxv/faultwall:main</code></pre>
 
-    <p>Point your agent at <code>localhost:5433</code> instead of Postgres. Dashboard at <code>localhost:8080</code>. No SDK, no library, no app code changes. Overhead is about 0.14ms per query on managed Postgres — for LLM-bound workloads it's invisible.</p>
+    <p>Point your agent at <code>localhost:5433</code> instead of Postgres. Dashboard at <code>localhost:8080</code>. No SDK or library, nothing to change in the app code. Around 0.14ms per query on managed Postgres, which for LLM-bound workloads is noise.</p>
 
     <hr class="divider">
 
-    <p>If you're already giving agents database access, I'd genuinely like to hear what your setup looks like. Especially the parts that make you nervous. Open to feedback, issues, PRs.</p>
+    <p>If you're already giving agents DB access, I'd really like to hear what your setup looks like. Especially the parts that make you nervous.</p>
 
     <div class="cta">
       <a href="https://github.com/shreyasXV/faultwall" class="cta-btn cta-primary">⭐ Star on GitHub</a>
       <a href="https://faultwall.com" class="cta-btn cta-secondary">Learn more</a>
-      <p>MIT Licensed &middot; Single Go binary &middot; No telemetry</p>
+      <p>MIT &middot; Single Go binary &middot; No telemetry</p>
     </div>
   </div>
 </body>

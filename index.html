@@ -535,6 +535,97 @@
     }
 
     /* ══════════════════════════════════════
+       COMPATIBILITY GRID
+    ══════════════════════════════════════ */
+    .compat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .compat-card {
+      padding: 24px 20px;
+      background: rgba(10,10,18,0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .compat-card:hover {
+      border-color: rgba(124,92,252,0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .compat-card-dim {
+      opacity: 0.75;
+      grid-column: span 2;
+    }
+    .compat-status {
+      font-size: 28px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 10px currentColor);
+    }
+    .compat-green { color: #4ade80; }
+    .compat-yellow { color: #fbbf24; }
+    .compat-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .compat-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      font-weight: 500;
+    }
+    .compat-sub a {
+      color: var(--accent2);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .compat-footer {
+      max-width: 1100px;
+      margin: 40px auto 0;
+      text-align: center;
+    }
+    .compat-perf {
+      font-size: 15px;
+      color: var(--text);
+      padding: 16px 24px;
+      background: linear-gradient(135deg, rgba(124,92,252,0.08), rgba(59,130,246,0.08));
+      border: 1px solid rgba(124,92,252,0.2);
+      border-radius: 12px;
+      display: inline-block;
+    }
+    .compat-perf strong {
+      color: var(--accent2);
+      font-weight: 800;
+    }
+    .compat-footnote {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+    .compat-footnote a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .compat-footnote a:hover { text-decoration: underline; }
+    @media (max-width: 900px) {
+      .compat-grid { grid-template-columns: repeat(2, 1fr); }
+      .compat-card-dim { grid-column: span 2; }
+    }
+    @media (max-width: 480px) {
+      .compat-grid { grid-template-columns: 1fr; }
+      .compat-card-dim { grid-column: span 1; }
+    }
+
+    /* ══════════════════════════════════════
        SECTION COMMON
     ══════════════════════════════════════ */
     .section {
@@ -1040,6 +1131,7 @@
     </a>
     <div class="nav-center">
       <a href="#features">Features</a>
+      <a href="#compatibility">Works With</a>
       <a href="#how-it-works">How It Works</a>
       <a href="#architecture">Architecture</a>
       <a href="https://github.com/shreyasXV/faultwall#quick-start">Docs</a>
@@ -1261,6 +1353,61 @@
       <div class="bento-icon bento-icon-orange">🤖</div>
       <h3>AI-Native (MCP)</h3>
       <p>10-tool MCP server lets agents check their own policies, view violations, and manage themselves autonomously.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ COMPATIBILITY — Works With ═══════════ -->
+<section class="section" id="compatibility">
+  <div class="section-header reveal">
+    <div class="section-tag">Compatibility</div>
+    <h2>Works with every<br>managed Postgres</h2>
+    <p>Validated against the stack your team actually runs. Drop-in, wire-level, no driver changes.</p>
+  </div>
+  <div class="compat-grid reveal">
+    <div class="compat-card">
+      <div class="compat-status compat-green">🟢</div>
+      <div class="compat-name">Self-hosted Postgres</div>
+      <div class="compat-sub">12+</div>
+    </div>
+    <div class="compat-card">
+      <div class="compat-status compat-green">🟢</div>
+      <div class="compat-name">AWS RDS</div>
+      <div class="compat-sub">Postgres 16</div>
+    </div>
+    <div class="compat-card">
+      <div class="compat-status compat-green">🟢</div>
+      <div class="compat-name">AWS Aurora</div>
+      <div class="compat-sub">Postgres 16.8</div>
+    </div>
+    <div class="compat-card">
+      <div class="compat-status compat-green">🟢</div>
+      <div class="compat-name">Neon</div>
+      <div class="compat-sub">Serverless PG 17</div>
+    </div>
+    <div class="compat-card">
+      <div class="compat-status compat-green">🟢</div>
+      <div class="compat-name">PgBouncer</div>
+      <div class="compat-sub">tx + session</div>
+    </div>
+    <div class="compat-card">
+      <div class="compat-status compat-yellow">🟡</div>
+      <div class="compat-name">Supabase</div>
+      <div class="compat-sub">pooler — <a href="https://github.com/shreyasXV/faultwall/blob/main/docs/compatibility.md#supabase-tested-with-real-instance-2026-04-27" target="_blank" rel="noopener">workaround</a></div>
+    </div>
+    <div class="compat-card compat-card-dim">
+      <div class="compat-status compat-green">🟢</div>
+      <div class="compat-name">Cloud SQL · CrunchyBridge · DO MPG</div>
+      <div class="compat-sub">Expected<sup>¹</sup></div>
+    </div>
+  </div>
+  <div class="compat-footer reveal">
+    <div class="compat-perf">
+      <strong>+0.14ms</strong> per query &middot; <strong>−15% TPS</strong> on cloud latency &middot; <strong>zero</strong> agent code changes
+    </div>
+    <div class="compat-footnote">
+      ¹ Same Postgres wire protocol as validated providers; tested path exists, instance not provisioned. &nbsp;·&nbsp;
+      <a href="https://github.com/shreyasXV/faultwall/blob/main/docs/compatibility.md" target="_blank" rel="noopener">Full compatibility matrix &amp; SCRAM config →</a>
     </div>
   </div>
 </section>

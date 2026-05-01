@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/favicon.png" type="image/png">
+<title>FaultWall — Demo Dashboard</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --red: #e53e3e;
+    --orange: #f6821f;
+    --yellow: #f5c542;
+    --green: #38a169;
+    --text: #e2e8f0;
+    --muted: #718096;
+    --accent: #e53e3e;
+    --accent2: #f6821f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+  a { color: var(--orange); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Demo Banner ── */
+  .demo-banner {
+    background: linear-gradient(90deg, rgba(246,130,31,0.08), rgba(229,62,62,0.08));
+    border-bottom: 1px solid rgba(246,130,31,0.2);
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .demo-banner a {
+    color: var(--orange);
+    font-weight: bold;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: bold;
+    background: linear-gradient(135deg, var(--red), var(--orange));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 1px;
+  }
+  .header-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .badge .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .pattern-badge {
+    background: linear-gradient(135deg, rgba(229,62,62,0.15), rgba(246,130,31,0.15));
+    border-color: rgba(246,130,31,0.3);
+    color: var(--orange);
+    font-weight: bold;
+  }
+  .enforce-badge {
+    background: linear-gradient(135deg, rgba(229,62,62,0.15), rgba(229,62,62,0.25));
+    border-color: rgba(229,62,62,0.4);
+    color: #e53e3e;
+    font-weight: bold;
+  }
+
+  /* ── Layout ── */
+  main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    display: grid;
+    gap: 20px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── Overview Stats ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0;
+  }
+  .stat-box {
+    padding: 18px 16px;
+    border-right: 1px solid var(--border);
+    text-align: center;
+  }
+  .stat-box:last-child { border-right: none; }
+  .stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--red), var(--orange));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Filters ── */
+  .filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filters select,
+  .filters input {
+    padding: 5px 10px;
+    font-size: 11px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: inherit;
+  }
+  .filters select:focus,
+  .filters input:focus {
+    outline: none;
+    border-color: var(--orange);
+  }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+  }
+  th {
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    background: var(--surface2);
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.query-row { cursor: pointer; }
+  tr.query-row:hover td { background: rgba(246,130,31,0.05); }
+
+  /* ── Status Badges ── */
+  .outcome-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .outcome-allow {
+    background: rgba(56,161,105,0.15);
+    color: var(--green);
+    border: 1px solid rgba(56,161,105,0.3);
+  }
+  .outcome-warn {
+    background: rgba(245,197,66,0.15);
+    color: var(--yellow);
+    border: 1px solid rgba(245,197,66,0.3);
+  }
+  .outcome-block {
+    background: rgba(229,62,62,0.15);
+    color: #fc8181;
+    border: 1px solid rgba(229,62,62,0.3);
+  }
+
+  /* ── Query Text ── */
+  .query-text {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #a0aec0;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+  }
+  .agent-tag {
+    font-size: 10px;
+    color: var(--orange);
+    font-weight: bold;
+  }
+  .timestamp {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* ── Expanded Row ── */
+  .expanded-row {
+    display: none;
+    background: var(--surface2);
+  }
+  .expanded-row.open { display: table-row; }
+  .expanded-inner {
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .expanded-section {}
+  .expanded-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .expanded-sql {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #fc8181;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .expanded-reason {
+    font-size: 12px;
+    color: #fc8181;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .expanded-fix {
+    font-size: 11px;
+    color: var(--green);
+    background: rgba(56,161,105,0.1);
+    border: 1px solid rgba(56,161,105,0.2);
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+
+  /* ── Two Column Layout ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Bar Chart ── */
+  .agent-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 16px;
+    height: 120px;
+  }
+  .agent-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 40px;
+  }
+  .agent-bar {
+    width: 100%;
+    max-width: 40px;
+    background: linear-gradient(180deg, #e53e3e, #f6821f);
+    border-radius: 3px 3px 0 0;
+    transition: height 0.5s ease;
+  }
+  .agent-bar-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+    text-align: center;
+  }
+  .agent-bar-count {
+    font-size: 10px;
+    color: var(--orange);
+    font-weight: bold;
+    margin-bottom: 2px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--muted);
+    font-size: 11px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .stat-value { font-size: 22px; }
+    header { padding: 12px 14px; }
+    main { padding: 12px 10px; }
+    .expanded-inner { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Demo Banner -->
+<div class="demo-banner">
+  DEMO DATA — This is a live preview with sample queries.
+  <a href="https://github.com/shreyasXV/faultwall">Install FaultWall →</a>
+</div>
+
+<header>
+  <div class="logo">FaultWall</div>
+  <div class="header-meta">
+    <span class="badge pattern-badge">proxy-mode</span>
+    <span class="badge enforce-badge">🛡️ enforce</span>
+    <span class="badge">
+      <span class="dot"></span>
+      <span>connected · 6 agents</span>
+    </span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Stats Overview -->
+  <div class="card">
+    <div class="stats-grid" id="stats-grid"></div>
+  </div>
+
+  <!-- Query Log -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🔍 Query Log</span>
+      <div class="filters">
+        <select id="filter-agent">
+          <option value="all">All agents</option>
+        </select>
+        <select id="filter-outcome">
+          <option value="all">All outcomes</option>
+          <option value="allow">Allow</option>
+          <option value="warn">Warn</option>
+          <option value="block">Block</option>
+        </select>
+        <input type="text" id="filter-sql" placeholder="Search SQL..." style="width:180px;">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Outcome</th>
+            <th>SQL Query</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="query-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Violations + Chart -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🚨 Recent Blocks</span>
+        <span class="card-subtitle" id="block-count"></span>
+      </div>
+      <div id="block-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📊 Violations per Agent</span>
+      </div>
+      <div id="violation-chart"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  FaultWall Demo · <a href="https://faultwall.com">faultwall.com</a> ·
+  <a href="https://github.com/shreyasXV/faultwall">GitHub</a>
+</footer>
+
+<script>
+// ── Demo Data ──────────────────────────────────────────────────────────────
+const AGENTS = [
+  'analytics-agent-prod',
+  'customer-support-bot',
+  'data-export-worker',
+  'langchain-sql-agent',
+  'claude-code-migration-bot',
+  'crewai-research-agent'
+];
+
+const QUERIES = [
+  // BLOCKED (7 entries — ~15%)
+  {agent:'langchain-sql-agent', agentVersion:'v2.1', outcome:'block', sql:"DROP TABLE users", ts:'2m ago', reason:'Policy: destructive_operation_denied (DROP)', fix:'Remove DROP privileges from this agent. If schema migration is needed, use a dedicated migration agent with explicit DROP allowlisting.'},
+  {agent:'crewai-research-agent', agentVersion:'v1.4', outcome:'block', sql:"DELETE FROM customers WHERE 1=1", ts:'8m ago', reason:'Policy: no_where_clause_on_destructive_op (unbounded DELETE)', fix:'Add a scoped WHERE clause filtering by tenant_id or created_at range.'},
+  {agent:'langchain-sql-agent', agentVersion:'v2.1', outcome:'block', sql:"UPDATE users SET role = 'admin' WHERE 1=1", ts:'34m ago', reason:'Policy: privilege_escalation_denied (role modification)', fix:'Role changes require the admin-provisioning agent. Remove UPDATE on role column from this agent policy.'},
+  {agent:'data-export-worker', agentVersion:'v3.0', outcome:'block', sql:"SELECT * FROM pg_user", ts:'1h ago', reason:'Policy: dangerous_function_denied (pg_user)', fix:'System catalog access is denied for data agents. If user metadata is needed, expose it via a read-only view.'},
+  {agent:'claude-code-migration-bot', agentVersion:'v1.0', outcome:'block', sql:"COPY (SELECT * FROM credit_cards) TO STDOUT", ts:'3h ago', reason:'Policy: exfiltration_denied (COPY TO STDOUT on sensitive table)', fix:'COPY TO is globally denied. Use the data-export-worker with appropriate PII masking policies.'},
+  {agent:'crewai-research-agent', agentVersion:'v1.4', outcome:'block', sql:"SELECT password_hash, ssn FROM users JOIN accounts ON users.id = accounts.user_id", ts:'7h ago', reason:'Policy: pii_column_access_denied (password_hash, ssn)', fix:'Allowlist only non-sensitive columns. Add column-level restrictions under the research policy.'},
+  {agent:'langchain-sql-agent', agentVersion:'v2.1', outcome:'block', sql:"'; DROP TABLE sessions; --", ts:'12h ago', reason:'Policy: sql_injection_pattern_detected', fix:'This appears to be a prompt injection attempt. Review the upstream prompt chain for injection vectors.'},
+
+  // WARNINGS (11 entries — ~25%)
+  {agent:'analytics-agent-prod', agentVersion:'v4.2', outcome:'warn', sql:"SELECT * FROM orders", ts:'3m ago', reason:'Broad SELECT * without column specification', fix:'Specify only needed columns to reduce data exposure.'},
+  {agent:'customer-support-bot', agentVersion:'v2.0', outcome:'warn', sql:"UPDATE tickets SET status = 'closed'", ts:'11m ago', reason:'UPDATE without WHERE clause', fix:'Add WHERE clause: WHERE ticket_id = $1'},
+  {agent:'data-export-worker', agentVersion:'v3.0', outcome:'warn', sql:"SELECT id, email, name, phone, address FROM users", ts:'22m ago', reason:'Reading outside agent scope (phone, address columns)', fix:'Restrict to columns defined in data_export policy allowlist.'},
+  {agent:'langchain-sql-agent', agentVersion:'v2.1', outcome:'warn', sql:"SELECT * FROM transactions WHERE amount > 0", ts:'45m ago', reason:'SELECT * on sensitive table without LIMIT', fix:'Add LIMIT clause and specify columns explicitly.'},
+  {agent:'crewai-research-agent', agentVersion:'v1.4', outcome:'warn', sql:"SELECT u.*, o.* FROM users u JOIN orders o ON u.id = o.user_id", ts:'1h ago', reason:'Unbounded JOIN with SELECT * (potential large result set)', fix:'Add LIMIT 1000 and specify only required columns.'},
+  {agent:'analytics-agent-prod', agentVersion:'v4.2', outcome:'warn', sql:"SELECT count(*) FROM events WHERE timestamp > now() - interval '30 days'", ts:'2h ago', reason:'Full table scan on large table without index hint', fix:'Consider adding a date-range partition or index.'},
+  {agent:'claude-code-migration-bot', agentVersion:'v1.0', outcome:'warn', sql:"ALTER TABLE users ADD COLUMN temp_flag BOOLEAN DEFAULT false", ts:'4h ago', reason:'Schema modification detected (ALTER TABLE)', fix:'Schema changes should go through migration review. Allowlist specific ALTER operations.'},
+  {agent:'customer-support-bot', agentVersion:'v2.0', outcome:'warn', sql:"SELECT * FROM audit_log WHERE user_id = $1", ts:'6h ago', reason:'Access to audit_log outside agent scope', fix:'Grant read access to audit_log under support policy if justified.'},
+  {agent:'data-export-worker', agentVersion:'v3.0', outcome:'warn', sql:"SELECT email, created_at FROM newsletter_subscribers", ts:'9h ago', reason:'PII column access (email) without masking', fix:'Apply email masking transform in export policy.'},
+  {agent:'analytics-agent-prod', agentVersion:'v4.2', outcome:'warn', sql:"INSERT INTO reports (tenant_id, data) VALUES ($1, $2)", ts:'14h ago', reason:'INSERT to reports table not in write allowlist', fix:'Add reports table to analytics-agent write allowlist.'},
+  {agent:'crewai-research-agent', agentVersion:'v1.4', outcome:'warn', sql:"SELECT * FROM api_keys WHERE active = true", ts:'20h ago', reason:'Access to secrets table (api_keys)', fix:'Deny access to api_keys table for non-admin agents.'},
+
+  // ALLOWED (22 entries — ~60%)
+  {agent:'analytics-agent-prod', agentVersion:'v4.2', outcome:'allow', sql:"SELECT id, name, email FROM users WHERE tenant_id = $1 LIMIT 100", ts:'1m ago'},
+  {agent:'customer-support-bot', agentVersion:'v2.0', outcome:'allow', sql:"SELECT ticket_id, subject, status FROM tickets WHERE customer_id = $1 AND status = 'open' ORDER BY created_at DESC LIMIT 20", ts:'2m ago'},
+  {agent:'data-export-worker', agentVersion:'v3.0', outcome:'allow', sql:"SELECT id, created_at, amount FROM transactions WHERE tenant_id = $1 AND created_at > $2 LIMIT 500", ts:'5m ago'},
+  {agent:'langchain-sql-agent', agentVersion:'v2.1', outcome:'allow', sql:"SELECT product_name, price, stock FROM products WHERE category = $1 AND active = true", ts:'6m ago'},
+  {agent:'claude-code-migration-bot', agentVersion:'v1.0', outcome:'allow', sql:"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = $1", ts:'7m ago'},
+  {agent:'crewai-research-agent', agentVersion:'v1.4', outcome:'allow', sql:"SELECT topic, summary, published_at FROM articles WHERE published_at > $1 ORDER BY published_at DESC LIMIT 50", ts:'9m ago'},
+  {agent:'analytics-agent-prod', agentVersion:'v4.2', outcome:'allow', sql:"SELECT date_trunc('day', created_at) AS day, count(*) FROM events WHERE tenant_id = $1 GROUP BY day ORDER BY day", ts:'10m ago'},
+  {agent:'customer-support-bot', agentVersion:'v2.0', outcome:'allow', sql:"INSERT INTO ticket_responses (ticket_id, body, agent_id) VALUES ($1, $2, $3)", ts:'12m ago'},
+  {agent:'data-export-worker', agentVersion:'v3.0', outcome:'allow', sql:"SELECT id, email, plan_type FROM customers WHERE tenant_id = $1 AND active = true", ts:'15m ago'},
+  {agent:'langchain-sql-agent', agentVersion:'v2.1', outcome:'allow', sql:"SELECT o.id, o.total, o.status FROM orders o WHERE o.customer_id = $1 AND o.created_at > $2", ts:'18m ago'},
+  {agent:'analytics-agent-prod', agentVersion:'v4.2', outcome:'allow', sql:"UPDATE dashboards SET last_refreshed = now() WHERE dashboard_id = $1 AND tenant_id = $2", ts:'25m ago'},
+  {agent:'claude-code-migration-bot', agentVersion:'v1.0', outcome:'allow', sql:"SELECT table_name, pg_total_relation_size(quote_ident(table_name)) FROM information_schema.tables WHERE table_schema = 'public'", ts:'30m ago'},
+  {agent:'customer-support-bot', agentVersion:'v2.0', outcome:'allow', sql:"UPDATE tickets SET status = 'resolved', resolved_at = now() WHERE ticket_id = $1 AND assigned_agent = $2", ts:'35m ago'},
+  {agent:'crewai-research-agent', agentVersion:'v1.4', outcome:'allow', sql:"SELECT title, abstract, citation_count FROM papers WHERE topic_id = $1 AND year >= $2 ORDER BY citation_count DESC LIMIT 25", ts:'40m ago'},
+  {agent:'data-export-worker', agentVersion:'v3.0', outcome:'allow', sql:"SELECT id, name, region FROM warehouses WHERE tenant_id = $1", ts:'50m ago'},
+  {agent:'analytics-agent-prod', agentVersion:'v4.2', outcome:'allow', sql:"SELECT metric_name, avg(value) FROM metrics WHERE collected_at > $1 GROUP BY metric_name", ts:'1h ago'},
+  {agent:'langchain-sql-agent', agentVersion:'v2.1', outcome:'allow', sql:"SELECT c.name, c.email, count(o.id) AS order_count FROM customers c JOIN orders o ON c.id = o.customer_id WHERE c.tenant_id = $1 GROUP BY c.name, c.email LIMIT 50", ts:'2h ago'},
+  {agent:'customer-support-bot', agentVersion:'v2.0', outcome:'allow', sql:"SELECT id, content, created_at FROM knowledge_base WHERE category = $1 AND lang = $2 LIMIT 10", ts:'5h ago'},
+  {agent:'claude-code-migration-bot', agentVersion:'v1.0', outcome:'allow', sql:"SELECT indexname, indexdef FROM pg_indexes WHERE tablename = $1", ts:'8h ago'},
+  {agent:'crewai-research-agent', agentVersion:'v1.4', outcome:'allow', sql:"SELECT company_name, revenue, employee_count FROM companies WHERE industry = $1 AND revenue > $2 LIMIT 100", ts:'11h ago'},
+  {agent:'data-export-worker', agentVersion:'v3.0', outcome:'allow', sql:"SELECT date_trunc('month', created_at) AS month, sum(amount) FROM invoices WHERE tenant_id = $1 GROUP BY month ORDER BY month DESC LIMIT 12", ts:'16h ago'},
+  {agent:'analytics-agent-prod', agentVersion:'v4.2', outcome:'allow', sql:"SELECT session_id, page_views, duration FROM sessions WHERE tenant_id = $1 AND started_at > $2 LIMIT 200", ts:'23h ago'}
+];
+
+// ── Render Stats ──────────────────────────────────────────────────────────
+function renderStats() {
+  const total = QUERIES.length;
+  const blocked = QUERIES.filter(q => q.outcome === 'block').length;
+  const warned = QUERIES.filter(q => q.outcome === 'warn').length;
+  const allowed = QUERIES.filter(q => q.outcome === 'allow').length;
+
+  // Find top offending agent
+  const agentBlocks = {};
+  QUERIES.filter(q => q.outcome === 'block' || q.outcome === 'warn').forEach(q => {
+    agentBlocks[q.agent] = (agentBlocks[q.agent] || 0) + 1;
+  });
+  const topAgent = Object.entries(agentBlocks).sort((a,b) => b[1]-a[1])[0];
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-box">
+      <div class="stat-value">${total}</div>
+      <div class="stat-label">Queries (24h)</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">${allowed}</div>
+      <div class="stat-label">Allowed</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">${warned}</div>
+      <div class="stat-label">Warnings</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">${blocked}</div>
+      <div class="stat-label">Blocked</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" style="font-size:16px;">${topAgent ? topAgent[0].split('-').slice(0,2).join('-') : '—'}</div>
+      <div class="stat-label">Top Offender</div>
+    </div>
+  `;
+}
+
+// ── Populate Agent Filter ─────────────────────────────────────────────────
+function populateFilters() {
+  const select = document.getElementById('filter-agent');
+  AGENTS.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a;
+    opt.textContent = a;
+    select.appendChild(opt);
+  });
+}
+
+// ── Render Query Table ────────────────────────────────────────────────────
+function renderQueries() {
+  const agentFilter = document.getElementById('filter-agent').value;
+  const outcomeFilter = document.getElementById('filter-outcome').value;
+  const sqlFilter = document.getElementById('filter-sql').value.toLowerCase().trim();
+
+  let filtered = QUERIES;
+  if (agentFilter !== 'all') filtered = filtered.filter(q => q.agent === agentFilter);
+  if (outcomeFilter !== 'all') filtered = filtered.filter(q => q.outcome === outcomeFilter);
+  if (sqlFilter) filtered = filtered.filter(q => q.sql.toLowerCase().includes(sqlFilter));
+
+  const tbody = document.getElementById('query-tbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--muted);">No queries match the current filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((q, i) => {
+    const badgeCls = q.outcome === 'allow' ? 'outcome-allow' : q.outcome === 'warn' ? 'outcome-warn' : 'outcome-block';
+    const expandable = q.outcome === 'block';
+    const rowCls = expandable ? 'query-row' : '';
+    const onclick = expandable ? `onclick="toggleExpand(${i})"` : '';
+
+    let row = `<tr class="${rowCls}" ${onclick}>
+      <td><span class="agent-tag">agent:${q.agent}/${q.agentVersion}</span></td>
+      <td><span class="outcome-badge ${badgeCls}">${q.outcome}</span></td>
+      <td><span class="query-text" title="${escHtml(q.sql)}">${escHtml(q.sql)}</span></td>
+      <td><span class="timestamp">${q.ts}</span></td>
+    </tr>`;
+
+    if (expandable) {
+      row += `<tr class="expanded-row" id="expand-${i}">
+        <td colspan="4">
+          <div class="expanded-inner">
+            <div class="expanded-section">
+              <div class="expanded-label">Full SQL</div>
+              <div class="expanded-sql">${escHtml(q.sql)}</div>
+            </div>
+            <div class="expanded-section">
+              <div class="expanded-label">Block Reason</div>
+              <div class="expanded-reason">${escHtml(q.reason)}</div>
+              <div class="expanded-label" style="margin-top:12px;">Suggested Fix</div>
+              <div class="expanded-fix">${escHtml(q.fix)}</div>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    }
+    return row;
+  }).join('');
+}
+
+// ── Render Block List ─────────────────────────────────────────────────────
+function renderBlockList() {
+  const blocks = QUERIES.filter(q => q.outcome === 'block');
+  document.getElementById('block-count').textContent = blocks.length + ' blocked';
+  document.getElementById('block-list').innerHTML = blocks.map(q => `
+    <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;">
+      <span style="font-size:16px;flex-shrink:0;">🔴</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:bold;color:#fc8181;">${escHtml(q.reason)}</div>
+        <div style="font-family:'Courier New',monospace;font-size:11px;color:#a0aec0;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q.sql)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">agent:${escHtml(q.agent)} · ${q.ts}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Render Violation Chart ────────────────────────────────────────────────
+function renderViolationChart() {
+  const violations = QUERIES.filter(q => q.outcome === 'block' || q.outcome === 'warn');
+  const counts = {};
+  violations.forEach(q => { counts[q.agent] = (counts[q.agent] || 0) + 1; });
+  const entries = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const maxCount = Math.max(1, ...entries.map(e => e[1]));
+
+  document.getElementById('violation-chart').innerHTML = '<div class="agent-bar-chart">' + entries.map(([agent, count]) => {
+    const heightPct = (count / maxCount) * 80;
+    const label = agent.split('-').slice(0,2).join('-');
+    return `<div class="agent-bar-col">
+      <span class="agent-bar-count">${count}</span>
+      <div class="agent-bar" style="height:${heightPct}px"></div>
+      <span class="agent-bar-label" title="${agent}">${label}</span>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// ── Toggle Expand ─────────────────────────────────────────────────────────
+function toggleExpand(idx) {
+  const row = document.getElementById('expand-' + idx);
+  if (row) row.classList.toggle('open');
+}
+
+// ── Escape HTML ───────────────────────────────────────────────────────────
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  populateFilters();
+  renderStats();
+  renderQueries();
+  renderBlockList();
+  renderViolationChart();
+
+  document.getElementById('filter-agent').addEventListener('change', renderQueries);
+  document.getElementById('filter-outcome').addEventListener('change', renderQueries);
+  document.getElementById('filter-sql').addEventListener('input', renderQueries);
+});
+</script>
+</body>
+</html>

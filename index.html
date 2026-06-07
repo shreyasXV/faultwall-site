@@ -1032,6 +1032,71 @@
     }
     .cta-section .btn { position: relative; }
 
+    /* ═════════════════════════════════════
+       PRICING
+    ═════════════════════════════════════ */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      max-width: 880px;
+      margin: 0 auto;
+      align-items: stretch;
+    }
+    .price-card {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 32px;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .price-card:hover { transform: translateY(-4px); border-color: #2a2a45; }
+    .price-card.featured {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), 0 24px 60px -20px rgba(124,92,252,0.4);
+    }
+    .price-badge {
+      position: absolute;
+      top: -12px; right: 24px;
+      background: linear-gradient(135deg, var(--accent), #6344e0);
+      color: #fff; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 6px 14px; border-radius: 999px;
+    }
+    .price-name {
+      font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
+      color: var(--accent2); text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .price-amount {
+      font-size: 44px; font-weight: 900; letter-spacing: -0.03em;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .price-amount span { font-size: 16px; font-weight: 600; color: var(--muted); }
+    .price-tagline { color: var(--muted); font-size: 15px; margin-bottom: 24px; line-height: 1.6; }
+    .price-features {
+      list-style: none; padding: 0; margin: 0 0 28px;
+      display: flex; flex-direction: column; gap: 12px;
+      flex: 1;
+    }
+    .price-features li {
+      font-size: 14px; color: var(--text); line-height: 1.5;
+      padding-left: 26px; position: relative;
+    }
+    .price-features li::before {
+      content: "✓";
+      position: absolute; left: 0; top: 0;
+      color: var(--green); font-weight: 700;
+    }
+    .price-card .btn { width: 100%; justify-content: center; text-align: center; }
+    @media (max-width: 760px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
+    }
+
     /* ══════════════════════════════════════
        FOOTER
     ══════════════════════════════════════ */
@@ -1153,6 +1218,7 @@
       <a href="#compatibility">Works With</a>
       <a href="#how-it-works">How It Works</a>
       <a href="#architecture">Architecture</a>
+      <a href="#pricing">Pricing</a>
       <a href="https://github.com/shreyasXV/faultwall#quick-start">Docs</a>
       <a href="https://github.com/shreyasXV/faultwall#full-api-reference">API</a>
     </div>
@@ -1600,6 +1666,48 @@
     <a href="mailto:shreyas@faultwall.com" class="btn btn-primary" style="font-size:14px; padding:12px 28px; margin-top:28px;">Contact Us →</a>
     <p class="enterprise-email">shreyas@faultwall.com</p>
   </div>
+</section>
+
+<!-- ═══════════ PRICING ═══════════ -->
+<section class="section" id="pricing">
+  <div class="section-header reveal">
+    <div class="section-tag">Pricing</div>
+    <h2>Open source core.<br>Optional hosted plane.</h2>
+    <p>Self-host everything for free, forever. Upgrade for the hosted control plane when you want telemetry, risk scoring, and a managed review queue.</p>
+  </div>
+  <div class="pricing-grid">
+    <!-- Open Source -->
+    <div class="price-card reveal">
+      <div class="price-name">Open Source</div>
+      <div class="price-amount">$0</div>
+      <p class="price-tagline">Self-host the full firewall. MIT licensed — yours forever.</p>
+      <ul class="price-features">
+        <li>Inline L7 proxy &amp; deterministic SQL parsing</li>
+        <li>Mission-scoped YAML policies (tables, ops, row limits)</li>
+        <li>Agent identity &amp; real-time enforcement</li>
+        <li>Anomaly detection &amp; MCP server</li>
+        <li>All open-source features — no feature gates</li>
+      </ul>
+      <a href="https://github.com/shreyasXV/faultwall" class="btn btn-secondary">View on GitHub</a>
+    </div>
+    <!-- Team (highlighted) -->
+    <div class="price-card featured reveal reveal-delay-1">
+      <div class="price-badge">Recommended</div>
+      <div class="price-name">Team</div>
+      <div class="price-amount">$200<span>/mo</span></div>
+      <p class="price-tagline">Everything in Open Source, plus the hosted control plane.</p>
+      <ul class="price-features">
+        <li>Hosted control plane — nothing to operate</li>
+        <li>Telemetry dashboard (metadata only — queries stay yours)</li>
+        <li>QWM risk scoring across your workload</li>
+        <li>APA review queue + auto-approve policies</li>
+        <li>Installations dashboard</li>
+        <li>Email support</li>
+      </ul>
+      <a href="https://app.faultwall.com" class="btn btn-primary">Get Started</a>
+    </div>
+  </div>
+  <p style="text-align:center; color:var(--muted); font-size:13px; margin-top:24px;">Sign up free — upgrade to Team anytime from your dashboard.</p>
 </section>
 
 <!-- ═══════════ CTA ═══════════ -->

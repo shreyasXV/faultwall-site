@@ -1240,24 +1240,22 @@
   <div class="hero-grid"></div>
   <div class="hero-badge">
     <span class="dot"></span>
-    Open Source · L7 Proxy · &lt;1ms Latency · Deterministic — No LLM · Mission-Scoped Policies
+    Open source · Inline proxy for PostgreSQL
   </div>
   <h1>
     The Agentic<br>
     <span class="line2">Data Firewall</span>
   </h1>
   <p class="hero-sub">
-    See what your AI agents do to your database — then control it. Deterministic SQL parsing, no LLM in the loop — every decision is auditable and reproducible.
-    An inline L7 proxy that parses every SQL query and blocks violations
-    <em>before</em> they reach PostgreSQL. &lt;1ms added latency. One Go binary.
+    See every query your AI agents run against Postgres, and block the dangerous ones <em>before</em> they execute. An inline proxy that parses each SQL statement against per-agent policies. One Go binary, sub-millisecond overhead, no LLM in the path.
   </p>
   <div class="hero-buttons">
     <a href="https://app.faultwall.com" class="btn btn-primary">
       Get Started — Free
     </a>
-    <a href="https://github.com/shreyasXV/faultwall#quick-start" class="btn btn-secondary">Quick Start →</a>
-    <a href="/demo.html" class="btn btn-secondary">See it in action →</a>
+    <a href="/demo.html" class="btn btn-secondary">See a live demo →</a>
   </div>
+  <p style="margin-top:22px; font-size:13px; color:var(--muted); max-width:560px;">Sits in front of self-hosted, RDS, Aurora, or Neon. No driver changes, no schema changes. Start in log-only Monitor mode, switch to blocking when you trust it.</p>
 </section>
 
 <!-- ═══════════ DASHBOARD SCREENSHOT ═══════════ -->
@@ -1374,20 +1372,20 @@
 <section class="stats-section reveal">
   <div class="stats-grid">
     <div class="stat-pill">
-      <div class="stat-num">5,000+</div>
-      <div class="stat-label">Lines of Go</div>
+      <div class="stat-num">+0.14ms</div>
+      <div class="stat-label">Median per-query overhead</div>
     </div>
     <div class="stat-pill">
-      <div class="stat-num">10</div>
-      <div class="stat-label">MCP Tools</div>
+      <div class="stat-num">100%</div>
+      <div class="stat-label">PostgreSQL clients supported</div>
     </div>
     <div class="stat-pill">
-      <div class="stat-num">1</div>
-      <div class="stat-label">Dependency</div>
+      <div class="stat-num">0</div>
+      <div class="stat-label">Driver or schema changes</div>
     </div>
     <div class="stat-pill">
-      <div class="stat-num">&lt;1ms</div>
-      <div class="stat-label">Per-Query Latency</div>
+      <div class="stat-num">MIT</div>
+      <div class="stat-label">Open source, self-host free</div>
     </div>
   </div>
 </section>
@@ -1492,7 +1490,7 @@
   </div>
   <div class="compat-footer reveal">
     <div class="compat-perf">
-      <strong>+0.14ms</strong> per query &middot; <strong>−15% TPS</strong> on cloud latency &middot; <strong>zero</strong> agent code changes
+      <strong>+0.14ms</strong> median per-query overhead &middot; throughput bound by your DB round-trip, not the proxy &middot; <strong>zero</strong> agent code changes
     </div>
     <div class="compat-footnote">
       ¹ Same Postgres wire protocol as validated providers; tested path exists, instance not provisioned. &nbsp;·&nbsp;
@@ -1640,20 +1638,20 @@
 
   <!-- AutoResearch -->
   <div class="autoresearch reveal">
-    <h3>🧬 AutoResearch — Self-Tuning Detection</h3>
-    <p>A genetic algorithm continuously evolves detection parameters — sensitivity thresholds, window sizes, baseline intervals — against your real workload. The longer FaultWall runs, the better it understands your database.</p>
+    <h3>🧬 Self-Tuning Detection</h3>
+    <p>Anomaly detection starts in observe-only mode and builds per-agent baselines from your real traffic before it ever flags anything. A genetic search tunes sensitivity thresholds and window sizes against your workload, so detection adapts to how your agents actually behave instead of a fixed global rule. You stay in control of when it moves from observe to enforce.</p>
     <div class="auto-stats">
       <div class="auto-stat">
-        <div class="big" style="color:var(--red);">60%</div>
-        <div class="label">Before tuning</div>
+        <div class="big" style="color:var(--accent2);">Observe</div>
+        <div class="label">Learn baselines first</div>
       </div>
       <div class="auto-stat-arrow">
         →
-        <span class="gen">100 generations</span>
+        <span class="gen">you decide</span>
       </div>
       <div class="auto-stat">
-        <div class="big" style="color:var(--green);">100%</div>
-        <div class="label">After tuning · 0 false positives</div>
+        <div class="big" style="color:var(--green);">Enforce</div>
+        <div class="label">Flag &amp; block on deviation</div>
       </div>
     </div>
   </div>

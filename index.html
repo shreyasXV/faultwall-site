@@ -1373,20 +1373,20 @@
 <section class="stats-section reveal">
   <div class="stats-grid">
     <div class="stat-pill">
-      <div class="stat-num" id="stat-blocked">100%</div>
-      <div class="stat-label" id="stat-blocked-label">PostgreSQL clients supported</div>
+      <div class="stat-num" id="stat-blocked">Every</div>
+      <div class="stat-label" id="stat-blocked-label">Rogue query blocked before it runs</div>
     </div>
     <div class="stat-pill">
       <div class="stat-num">+0.14ms</div>
-      <div class="stat-label">Median per-query overhead</div>
+      <div class="stat-label">Added per query — your DB won't feel it</div>
     </div>
     <div class="stat-pill">
       <div class="stat-num">0</div>
-      <div class="stat-label">Driver or schema changes</div>
+      <div class="stat-label">Changes to your agents or schema</div>
     </div>
     <div class="stat-pill">
-      <div class="stat-num">MIT</div>
-      <div class="stat-label">Open source, self-host free</div>
+      <div class="stat-num">5 min</div>
+      <div class="stat-label">From install to first blocked query</div>
     </div>
   </div>
 </section>
@@ -1807,6 +1807,7 @@
     var label = document.getElementById('stat-blocked-label');
     if (!el || !label) return;
     var MIN_SHOW = 500; // raise once a design-partner deployment feeds the number
+    // Below threshold: keep the static 'Every rogue query blocked' tile.
     fetch('https://app.faultwall.com/v1/stats/public', { mode: 'cors' })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(function (d) {

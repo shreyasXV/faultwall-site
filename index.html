@@ -1243,11 +1243,11 @@
     Open source · Inline proxy for PostgreSQL
   </div>
   <h1>
-    The Agentic<br>
-    <span class="line2">Data Firewall</span>
+    Your AI agent has<br>
+    <span class="line2">your DB credentials</span>
   </h1>
   <p class="hero-sub">
-    See every query your AI agents run against Postgres, and block the dangerous ones <em>before</em> they execute. An inline proxy that parses each SQL statement against per-agent policies. One Go binary, sub-millisecond overhead, no LLM in the path.
+    One prompt injection and it runs <em>DROP TABLE users</em> with full permission to do it. FaultWall is the inline proxy that parses every query against per-agent policies and blocks the dangerous ones <em>before</em> they reach Postgres. One Go binary, +0.14ms overhead, no LLM in the path.
   </p>
   <div class="hero-buttons">
     <a href="https://app.faultwall.com" class="btn btn-primary">
@@ -1255,7 +1255,8 @@
     </a>
     <a href="/demo.html" class="btn btn-secondary">See a live demo →</a>
   </div>
-  <p style="margin-top:22px; font-size:13px; color:var(--muted); max-width:560px;">Sits in front of self-hosted, RDS, Aurora, or Neon. No driver changes, no schema changes. Start in log-only Monitor mode, switch to blocking when you trust it.</p>
+  <p style="margin-top:24px; font-size:14px; color:var(--text); max-width:600px;"><strong style="color:var(--accent2);">Start in log-only mode — switch to blocking when you trust it.</strong></p>
+  <p style="margin-top:8px; font-size:13px; color:var(--muted); max-width:560px;">Works in front of self-hosted, RDS, Aurora, or Neon. No driver changes, no schema changes.</p>
 </section>
 
 <!-- ═══════════ DASHBOARD SCREENSHOT ═══════════ -->
@@ -1576,8 +1577,8 @@
 <div class="demo-section">
   <div class="section-header reveal">
     <div class="section-tag">Live Demo</div>
-    <h2>Built for the<br>confused deputy problem</h2>
-    <p>Your AI agent has valid credentials. A prompt injection tells it to DROP TABLE. FaultWall is the only thing standing between intent and disaster.</p>
+    <h2>Watch it block a<br>rogue query, live</h2>
+    <p>Same agent, same credentials. A read it's allowed to do passes through. A DROP TABLE it should never run gets stopped at the proxy — Postgres never sees it.</p>
   </div>
   <div class="terminal demo-terminal reveal">
     <div class="terminal-chrome">
@@ -1670,8 +1671,8 @@
 <section class="section" id="pricing">
   <div class="section-header reveal">
     <div class="section-tag">Pricing</div>
-    <h2>Open source core.<br>Optional hosted plane.</h2>
-    <p>Self-host everything for free, forever. Upgrade for the hosted control plane when you want telemetry, risk scoring, and a managed review queue.</p>
+    <h2>Free to self-host.<br>$200/mo when you want it managed.</h2>
+    <p>Self-host everything for free, forever — MIT licensed. Upgrade to the hosted control plane for telemetry, risk scoring, and a managed review queue.</p>
   </div>
   <div class="pricing-grid">
     <!-- Open Source -->

@@ -1230,11 +1230,13 @@
     Open source · Inline proxy for PostgreSQL
   </div>
   <h1>
-    Your AI agent has<br>
-    <span class="line2">your DB credentials</span>
+    The Agentic<br>
+    <span class="line2">Data Firewall</span>
   </h1>
   <p class="hero-sub">
-    One prompt injection and it runs <em>DROP TABLE users</em> with full permission to do it. FaultWall is the inline proxy that parses every query against per-agent policies and blocks the dangerous ones <em>before</em> they reach Postgres. One Go binary, +0.14ms overhead, no LLM in the path.
+    See what your AI agents do to your database — then control it. Deterministic SQL parsing, no LLM in the loop — every decision is auditable and reproducible.
+    An inline L7 proxy that parses every SQL query and blocks violations
+    <em>before</em> they reach PostgreSQL. &lt;1ms added latency. One Go binary.
   </p>
   <div class="hero-buttons">
     <a href="https://app.faultwall.com" class="btn btn-primary">
@@ -1246,8 +1248,19 @@
   <p style="margin-top:8px; font-size:13px; color:var(--muted); max-width:560px;">Works in front of self-hosted, RDS, Aurora, or Neon. No driver changes, no schema changes.</p>
 </section>
 
-<!-- ═══════════ DASHBOARD SCREENSHOT ═══════════ -->
+<!-- ═══════════ LIVE BLOCK DEMO (top of front page) ═══════════ -->
 <div class="dashboard-section reveal">
+  <div style="border-radius:14px; overflow:hidden; border:1px solid var(--border); box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+    <video autoplay loop muted playsinline style="width:100%; display:block;" poster="faultwall-demo.gif">
+      <source src="faultwall-demo.mp4" type="video/mp4">
+      <img src="faultwall-demo.gif" alt="FaultWall blocking a rogue DROP TABLE query in real time" style="width:100%; display:block;">
+    </video>
+  </div>
+  <p style="text-align:center; color:var(--muted); font-size:13px; margin-top:14px;">Real proxy, real Postgres, real block — every attack stopped in under 0.3ms, before the database sees it.</p>
+</div>
+
+<!-- ═══════════ DASHBOARD SCREENSHOT ═══════════ -->
+<div class="dashboard-section reveal" style="margin-top:48px;">
   <div class="dashboard-glow">
     <div class="dashboard-inner">
       <img src="dashboard_hero.png" alt="FaultWall proxy-mode dashboard — 6 agents, query log, recent blocks, and violations per agent">
@@ -1256,7 +1269,7 @@
 </div>
 
 <!-- ═══════════ INSTALL TERMINAL ═══════════ -->
-<div style="max-width:780px; margin:0 auto; padding:0 24px 0;" class="reveal">
+<div style="max-width:780px; margin:48px auto 0; padding:0 24px 0;" class="reveal">
   <div class="terminal">
     <div class="terminal-chrome">
       <div class="terminal-dots">
@@ -1273,17 +1286,6 @@
       <span class="t-comment"># Agents connect to port 5433. FaultWall enforces in real-time.</span>
     </div>
   </div>
-</div>
-
-<!-- ═══════════ LIVE BLOCK DEMO (front page) ═══════════ -->
-<div class="reveal" style="max-width:840px; margin:48px auto 0; padding:0 24px;">
-  <div style="border-radius:14px; overflow:hidden; border:1px solid var(--border); box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-    <video autoplay loop muted playsinline style="width:100%; display:block;" poster="faultwall-demo.gif">
-      <source src="faultwall-demo.mp4" type="video/mp4">
-      <img src="faultwall-demo.gif" alt="FaultWall blocking a rogue DROP TABLE query in real time" style="width:100%; display:block;">
-    </video>
-  </div>
-  <p style="text-align:center; color:var(--muted); font-size:13px; margin-top:14px;">Real proxy, real Postgres, real block — every attack stopped in under 0.3ms, before the database sees it.</p>
 </div>
 
 <!-- ═══════════ MARQUEE — Tech Stack ═══════════ -->

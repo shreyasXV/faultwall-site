@@ -1373,12 +1373,12 @@
 <section class="stats-section reveal">
   <div class="stats-grid">
     <div class="stat-pill">
-      <div class="stat-num">+0.14ms</div>
-      <div class="stat-label">Median per-query overhead</div>
+      <div class="stat-num" id="stat-blocked">—</div>
+      <div class="stat-label">Rogue queries blocked <span style="color:var(--green);">● live</span></div>
     </div>
     <div class="stat-pill">
-      <div class="stat-num">100%</div>
-      <div class="stat-label">PostgreSQL clients supported</div>
+      <div class="stat-num">+0.14ms</div>
+      <div class="stat-label">Median per-query overhead</div>
     </div>
     <div class="stat-pill">
       <div class="stat-num">0</div>
@@ -1797,6 +1797,29 @@
       }
     });
   });
+  // ── Live blocked-query counter (real number from the control plane) ──
+  // Fetches privacy-safe global aggregate. Never hardcoded; grows with usage.
+  (function () {
+    var el = document.getElementById('stat-blocked');
+    if (!el) return;
+    var FALLBACK = 'Live';
+    fetch('https://app.faultwall.com/v1/stats/public', { mode: 'cors' })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (d) {
+        var n = (d && typeof d.blocked === 'number') ? d.blocked : null;
+        if (n === null) { el.textContent = FALLBACK; return; }
+        var target = n;
+        var start = null, dur = 900;
+        function step(ts) {
+          if (!start) start = ts;
+          var p = Math.min((ts - start) / dur, 1);
+          el.textContent = Math.round(p * target).toLocaleString();
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      })
+      .catch(function () { el.textContent = FALLBACK; });
+  })();
 </script>
 
 </body>

@@ -1373,8 +1373,8 @@
 <section class="stats-section reveal">
   <div class="stats-grid">
     <div class="stat-pill">
-      <div class="stat-num" id="stat-blocked">—</div>
-      <div class="stat-label">Rogue queries blocked <span style="color:var(--green);">● live</span></div>
+      <div class="stat-num" id="stat-blocked">100%</div>
+      <div class="stat-label" id="stat-blocked-label">PostgreSQL clients supported</div>
     </div>
     <div class="stat-pill">
       <div class="stat-num">+0.14ms</div>
@@ -1799,26 +1799,30 @@
   });
   // ── Live blocked-query counter (real number from the control plane) ──
   // Fetches privacy-safe global aggregate. Never hardcoded; grows with usage.
+  // Threshold-gated: a small count reads as 'nobody uses this' and hurts trust,
+  // so we only swap the tile to the live count once it crosses MIN_SHOW. Below
+  // that the tile keeps its strong static content ('100% PG clients').
   (function () {
     var el = document.getElementById('stat-blocked');
-    if (!el) return;
-    var FALLBACK = 'Live';
+    var label = document.getElementById('stat-blocked-label');
+    if (!el || !label) return;
+    var MIN_SHOW = 500; // raise once a design-partner deployment feeds the number
     fetch('https://app.faultwall.com/v1/stats/public', { mode: 'cors' })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(function (d) {
         var n = (d && typeof d.blocked === 'number') ? d.blocked : null;
-        if (n === null) { el.textContent = FALLBACK; return; }
-        var target = n;
+        if (n === null || n < MIN_SHOW) return; // keep strong static tile
+        label.innerHTML = 'Rogue queries blocked <span style="color:var(--green);">\u25cf live</span>';
         var start = null, dur = 900;
         function step(ts) {
           if (!start) start = ts;
           var p = Math.min((ts - start) / dur, 1);
-          el.textContent = Math.round(p * target).toLocaleString();
+          el.textContent = Math.round(p * n).toLocaleString();
           if (p < 1) requestAnimationFrame(step);
         }
         requestAnimationFrame(step);
       })
-      .catch(function () { el.textContent = FALLBACK; });
+      .catch(function () { /* keep static tile */ });
   })();
 </script>
 

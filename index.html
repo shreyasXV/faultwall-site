@@ -1294,8 +1294,8 @@
   .fw-toggle-demo .fw-gate{display:flex;align-items:center;justify-content:center;position:relative;background:var(--surface,#0a0a12);border-left:1px solid var(--border);border-right:1px solid var(--border)}
   .fw-toggle-demo .fw-gate-bar{width:5px;height:78%;border-radius:100px;transition:all .45s;position:relative;background:linear-gradient(180deg,var(--fw-red),#7a1d1d);box-shadow:0 0 22px rgba(239,68,68,0.55)}
   .fw-toggle-demo .fw-gate.on .fw-gate-bar{background:linear-gradient(180deg,var(--fw-green2),var(--fw-green));box-shadow:0 0 26px rgba(34,197,94,0.6)}
-  .fw-toggle-demo .fw-gate-icon{position:absolute;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--surface2,#0c0c14);border:1.5px solid var(--fw-red);transition:all .45s}
-  .fw-toggle-demo .fw-gate.on .fw-gate-icon{border-color:var(--fw-green);transform:rotate(360deg)}
+  .fw-toggle-demo .fw-gate-icon{position:absolute;width:40px;height:40px;border-radius:50%;padding:7px;object-fit:contain;background:var(--surface2,#0c0c14);border:1.5px solid var(--fw-red);transition:all .45s}
+  .fw-toggle-demo .fw-gate.on .fw-gate-icon{border-color:var(--fw-green);transform:rotate(360deg);opacity:1!important;filter:none!important}
   .fw-toggle-demo .fw-flash{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .15s}
   .fw-toggle-demo .fw-flash.fire{background:radial-gradient(circle,rgba(239,68,68,0.18),transparent 70%);opacity:1}
   .fw-toggle-demo .fw-foot{margin-top:18px;text-align:center;font-family:var(--fw-mono);font-size:12px;color:var(--muted)}
@@ -1323,7 +1323,7 @@
     <div class="fw-gate" id="fwGate">
       <div class="fw-flash" id="fwFlash"></div>
       <div class="fw-gate-bar"></div>
-      <div class="fw-gate-icon" id="fwGateIcon">⛓</div>
+      <img class="fw-gate-icon" id="fwGateIcon" src="logo.png" alt="FaultWall" style="opacity:.4;filter:grayscale(1)">
     </div>
     <div class="fw-panel">
       <div class="fw-panel-head"><div class="fw-dots"><i></i><i></i><i></i></div><span class="fw-panel-title">postgres · production</span></div>
@@ -1333,7 +1333,7 @@
           <div class="fw-db-row"><span class="lbl">payments leaked</span><span class="val ok" id="fwDbLeak">0 rows</span></div>
           <div class="fw-db-row"><span class="lbl">unauthorized writes</span><span class="val ok" id="fwDbWrite">0</span></div>
         </div>
-        <div class="fw-db-status protected" id="fwDbStatus">🛡 PROTECTED</div>
+        <div class="fw-db-status exposed" id="fwDbStatus">⚠ EXPOSED</div>
       </div>
     </div>
   </div>
@@ -1376,7 +1376,8 @@
     function toggle(){
       on=!on;
       sw.classList.toggle('on',on);gate.classList.toggle('on',on);sw.setAttribute('aria-checked',on);
-      knob.textContent=on?'✓':'✕';gateIcon.textContent=on?'🛡':'⛓';
+      knob.textContent=on?'✓':'✕';
+      if(on){gateIcon.style.opacity='1';gateIcon.style.filter='none';}else{gateIcon.style.opacity='.4';gateIcon.style.filter='grayscale(1)';}
       stateLabel.textContent=on?'ON':'OFF';stateLabel.className='fw-state '+(on?'fw-state-on':'fw-state-off');
       hint.style.display='none';
       if(on){leakCount=0;writeCount=0;usersDropped=false;}

@@ -1222,7 +1222,7 @@
 </div>
 
 <!-- ═══════════ HERO ═══════════ -->
-<section class="hero">
+<section class="hero" style="padding-bottom:24px;">
   <div class="hero-mesh"></div>
   <div class="hero-grid"></div>
   <div class="hero-badge">
@@ -1233,17 +1233,6 @@
     The Agentic<br>
     <span class="line2">Data Firewall</span>
   </h1>
-  <p class="hero-sub">
-    Your AI agents can run any query against your database. FaultWall sits inline and <em>blocks the dangerous ones before they reach Postgres</em> — no LLM, no guesswork, under 1ms. One Go binary.
-  </p>
-  <div class="hero-buttons">
-    <a href="https://github.com/shreyasXV/faultwall#quick-start-5-minutes" class="btn btn-primary">
-      Get Started — Free
-    </a>
-    <a href="/demo.html" class="btn btn-secondary">See a live demo →</a>
-  </div>
-  <p style="margin-top:24px; font-size:14px; color:var(--text); max-width:600px;"><strong style="color:var(--accent2);">Start in log-only mode — switch to blocking when you trust it.</strong></p>
-  <p style="margin-top:8px; font-size:13px; color:var(--muted); max-width:560px;">Works in front of self-hosted, RDS, Aurora, or Neon. No driver changes, no schema changes.</p>
 </section>
 
 <!-- ═══════════ LIVE INTERACTIVE TOGGLE DEMO (top of front page) ═══════════ -->
@@ -1388,6 +1377,21 @@
     setDB();loop();
   })();
   </script>
+</div>
+
+<!-- ═══════════ HERO COPY + CTAs (below the demo) ═══════════ -->
+<div class="reveal" style="max-width:760px; margin:40px auto 0; padding:0 24px; text-align:center;">
+  <p class="hero-sub" style="margin:0 auto 28px;">
+    Your AI agents can run any query against your database. FaultWall sits inline and <em>blocks the dangerous ones before they reach Postgres</em> — no LLM, no guesswork, under 1ms. One Go binary.
+  </p>
+  <div class="hero-buttons" style="justify-content:center;">
+    <a href="https://github.com/shreyasXV/faultwall#quick-start-5-minutes" class="btn btn-primary">
+      Get Started — Free
+    </a>
+    <a href="/demo.html" class="btn btn-secondary">See a live demo →</a>
+  </div>
+  <p style="margin:24px auto 0; font-size:14px; color:var(--text); max-width:600px;"><strong style="color:var(--accent2);">Start in log-only mode — switch to blocking when you trust it.</strong></p>
+  <p style="margin:8px auto 0; font-size:13px; color:var(--muted); max-width:560px;">Works in front of self-hosted, RDS, Aurora, or Neon. No driver changes, no schema changes.</p>
 </div>
 
 <!-- ═══════════ DASHBOARD SCREENSHOT ═══════════ -->

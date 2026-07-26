@@ -304,11 +304,12 @@
     }
 
     .hero h1 {
-      font-size: clamp(52px, 8vw, 96px);
-      font-weight: 900;
-      line-height: 0.95;
-      letter-spacing: -0.05em;
-      margin-bottom: 28px;
+      font-size: clamp(38px, 5.2vw, 66px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      max-width: 900px;
       animation: fadeInUp 1s ease 0.4s both;
     }
     .hero h1 .h1-mono {
@@ -332,11 +333,11 @@
       50% { background-position: 100% 50%; }
     }
     .hero-sub {
-      font-size: clamp(16px, 2vw, 20px);
+      font-size: clamp(16px, 1.6vw, 20px);
       color: var(--muted);
-      max-width: 600px;
-      line-height: 1.8;
-      margin-bottom: 48px;
+      max-width: 680px;
+      line-height: 1.65;
+      margin: 0 0 48px;
       animation: fadeInUp 1s ease 0.6s both;
     }
     .hero-sub em { color: var(--text); font-style: normal; font-weight: 600; }
@@ -1240,10 +1241,11 @@
     Open source · Inline proxy for PostgreSQL
   </div>
   <h1>
-    Give AI agents access to your production database.<br>
+    Give AI agents access to<br>
+    your production database.<br>
     <span class="line2">Without losing control.</span>
   </h1>
-  <p class="hero-sub" style="font-size:clamp(16px,2.2vw,21px);color:var(--muted);max-width:720px;margin:22px auto 0;line-height:1.55;">Faultwall is the trust layer between AI agents and your database. It sees every query an agent runs, knows which agent ran it, and stops the ones that shouldn't execute.</p>
+  <p class="hero-sub">Faultwall is the trust layer between AI agents and your database. It sees every query an agent runs, knows which agent ran it, and stops the ones that shouldn't execute.</p>
 </section>
 
 <!-- ═══════════ LIVE INTERACTIVE TOGGLE DEMO (top of front page) ═══════════ -->

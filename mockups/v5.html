@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaultWall — The Agentic Data Firewall for PostgreSQL</title>
+<link rel="icon" href="../favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   V5 — TERMINAL-NATIVE / ENGINEERING BRUTALISM
+   Real product facts only. Log lines, commands, and policy
+   syntax match the actual README + policies.yaml.
+   ═══════════════════════════════════════════════════════ */
+:root {
+  --bg: #0c0e0c;
+  --grid: rgba(140,180,140,0.05);
+  --line: rgba(190,220,190,0.14);
+  --text: #dce5dc;
+  --text-2: rgba(220,229,220,0.58);
+  --text-3: rgba(220,229,220,0.32);
+  --phos: #4ae56a;
+  --phos-dim: rgba(74,229,106,0.12);
+  --alarm: #ff4b4b;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:var(--mono); background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased; line-height:1.6;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:32px 32px;
+}
+::selection { background:var(--phos); color:var(--bg); }
+a { color:inherit; text-decoration:none; }
+
+.frame { max-width:1080px; margin:0 auto; border-left:1px solid var(--line); border-right:1px solid var(--line); background:rgba(12,14,12,0.55); }
+
+/* ── Nav: status bar with real logo ── */
+nav {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 28px; border-bottom:1px solid var(--line);
+  font-size:13px;
+}
+.brand { display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:0.02em; font-size:14px; }
+.brand img { height:24px; width:auto; display:block; }
+.nav-r { display:flex; gap:24px; color:var(--text-2); font-size:12.5px; }
+.nav-r a:hover { color:var(--phos); }
+
+/* ── Hero ── */
+.hero { padding:72px 28px 56px; border-bottom:1px solid var(--line); }
+.man-line { font-size:12.5px; color:var(--text-3); margin-bottom:36px; }
+.man-line b { color:var(--text-2); font-weight:500; }
+h1 {
+  font-family:var(--sans);
+  font-size:clamp(36px, 4.8vw, 58px);
+  font-weight:700; letter-spacing:-0.03em; line-height:1.08;
+  max-width:22ch; text-wrap:balance; margin-bottom:20px;
+}
+h1 .ph { color:var(--phos); }
+.hero-sub {
+  font-family:var(--sans); font-size:16.5px; color:var(--text-2);
+  max-width:58ch; line-height:1.7; margin-bottom:14px;
+}
+.hero-sub b { color:var(--text); font-weight:600; }
+.hero-hook { font-family:var(--sans); font-size:14.5px; color:var(--text-3); max-width:58ch; margin-bottom:36px; line-height:1.65; }
+.prompt-row { display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; }
+.cmd-box {
+  display:flex; flex-direction:column; justify-content:center; gap:4px;
+  border:1px solid var(--line); background:rgba(0,0,0,0.35);
+  padding:12px 18px; font-size:13px;
+}
+.cmd-box .row { display:flex; gap:10px; align-items:center; }
+.cmd-box .dollar { color:var(--phos); }
+.cmd-box .tabs { display:flex; gap:2px; margin-bottom:8px; }
+.cmd-box .tab {
+  font-size:11px; color:var(--text-3); padding:3px 12px; cursor:pointer;
+  border:1px solid transparent; transition:all .18s var(--ease); user-select:none;
+}
+.cmd-box .tab:hover { color:var(--text-2); }
+.cmd-box .tab.on { color:var(--phos); border-color:var(--line); background:rgba(74,229,106,0.06); }
+.btn-solid {
+  display:flex; align-items:center;
+  background:var(--phos); color:var(--bg); font-weight:600; font-size:14px;
+  padding:13px 24px; border:1px solid var(--phos);
+  transition:all .2s var(--ease);
+}
+.btn-solid:hover { background:transparent; color:var(--phos); }
+.btn-hollow {
+  display:flex; align-items:center;
+  border:1px solid var(--line); color:var(--text-2); font-size:14px; padding:13px 24px;
+  transition:all .2s var(--ease);
+}
+.btn-hollow:hover { border-color:var(--text-2); color:var(--text); }
+
+/* ── Session: real log format from the product ── */
+.session { border-bottom:1px solid var(--line); }
+.session-head {
+  display:flex; justify-content:space-between; padding:14px 28px;
+  border-bottom:1px solid var(--line); font-size:12px; color:var(--text-3);
+}
+.session-head .live { color:var(--phos); }
+.session-head .live::before { content:'● '; animation:blink 2s steps(1) infinite; }
+@keyframes blink { 50% { opacity:0.3; } }
+.session-body { padding:26px 28px; font-size:13px; line-height:2.1; overflow-x:auto; }
+.lg { white-space:nowrap; }
+.lg .ok { color:var(--phos); }
+.lg .no { color:var(--alarm); }
+.lg .agent { color:var(--text-2); }
+.lg .reason { color:var(--text-3); }
+.lg .q { color:var(--text); }
+.s-note { color:var(--text-3); font-size:12px; margin-top:14px; }
+.s-note em { color:var(--phos); font-style:normal; }
+
+/* ── Fact table ── */
+.facts { border-bottom:1px solid var(--line); }
+.facts-head { padding:48px 28px 8px; }
+.facts-head .no { color:var(--phos); font-size:12px; letter-spacing:0.1em; }
+h2 { font-family:var(--sans); font-size:clamp(24px,3vw,34px); font-weight:700; letter-spacing:-0.025em; margin-top:8px; }
+table { width:100%; border-collapse:collapse; margin-top:32px; }
+tr { border-top:1px solid var(--line); }
+tr:hover td { background:var(--phos-dim); }
+td { padding:18px 28px; vertical-align:top; font-size:13.5px; }
+td.k { width:230px; color:var(--phos); font-size:12.5px; letter-spacing:0.04em; }
+td.v { color:var(--text-2); font-family:var(--sans); font-size:14.5px; line-height:1.65; }
+td.v b { color:var(--text); font-weight:600; }
+td.v code { font-family:var(--mono); font-size:12.5px; color:var(--phos); background:rgba(74,229,106,0.08); padding:1px 6px; }
+
+/* ── Two modes ── */
+.modes { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--line); }
+.mode { padding:36px 28px; }
+.mode:first-child { border-right:1px solid var(--line); }
+.mode .tag { font-size:11px; letter-spacing:0.1em; color:var(--phos); margin-bottom:12px; }
+.mode .tag.dim { color:var(--text-3); }
+.mode h3 { font-family:var(--sans); font-size:19px; font-weight:700; margin-bottom:10px; }
+.mode p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.65; margin-bottom:16px; }
+.mode .run { border:1px solid var(--line); background:rgba(0,0,0,0.35); padding:12px 16px; font-size:11.5px; color:var(--text-2); overflow-x:auto; white-space:pre; line-height:1.8; }
+.mode .run .c { color:var(--text-3); }
+
+/* ── Pricing strip ── */
+.pricing { display:flex; justify-content:space-between; align-items:center; padding:32px 28px; border-bottom:1px solid var(--line); gap:24px; flex-wrap:wrap; }
+.pricing .p-copy { font-family:var(--sans); font-size:16px; }
+.pricing .p-copy b { color:var(--phos); font-weight:600; }
+.pricing .p-copy span { color:var(--text-3); font-size:13.5px; display:block; margin-top:4px; }
+
+footer { display:flex; justify-content:space-between; padding:20px 28px; font-size:12px; color:var(--text-3); }
+
+@media (max-width:760px) {
+  .frame { border:none; }
+  td.k { width:auto; display:block; padding-bottom:0; }
+  td.v { display:block; padding-top:6px; }
+  .nav-r { display:none; }
+  .modes { grid-template-columns:1fr; }
+  .mode:first-child { border-right:none; border-bottom:1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) { .session-head .live::before { animation:none; } }
+</style>
+</head>
+<body>
+<div class="frame">
+
+<nav>
+  <a class="brand" href="#"><img src="../logo.png" alt="FaultWall">faultwall</a>
+  <div class="nav-r"><a href="#">docs</a><a href="https://github.com/shreyasXV/faultwall">github</a><a href="#">pricing</a><a href="#">dashboard</a></div>
+</nav>
+
+<section class="hero">
+  <div class="man-line"><b>FAULTWALL(1)</b> — the agentic data firewall for PostgreSQL — <b>Go 1.21+ · Postgres 14+</b></div>
+  <h1>Trust your AI agents with <span class="ph">production.</span></h1>
+  <p class="hero-sub"><b>Your AI agent has your database password.</b> A prompt injection hides a DROP TABLE in a customer comment — valid connection, valid credentials, the WAF sees nothing. <b>FaultWall parses the SQL before it reaches PostgreSQL and blocks it.</b></p>
+  <p class="hero-hook">Watches every query your agents run. Stops the dangerous ones, flags the wasteful ones. Agents connect to port 5433 instead of 5432 — that's the only change.</p>
+  <div class="prompt-row">
+    <div class="cmd-box">
+      <div class="tabs">
+        <span class="tab on" data-cmd="brew install shreyasXV/tap/faultwall">brew</span>
+        <span class="tab" data-cmd="curl -fsSL https://raw.githubusercontent.com/shreyasXV/faultwall/main/install.sh | bash">curl</span>
+        <span class="tab" data-cmd="docker pull ghcr.io/shreyasxv/faultwall:latest">docker</span>
+        <span class="tab" data-cmd="go install github.com/shreyasXV/faultwall@latest">go</span>
+      </div>
+      <div class="row"><span class="dollar">$</span> <span id="cmdText">brew install shreyasXV/tap/faultwall</span></div>
+    </div>
+    <a class="btn-solid" href="#">Quick start — 5 min</a>
+    <a class="btn-hollow" href="https://github.com/shreyasXV/faultwall">github ↗</a>
+  </div>
+</section>
+
+<section class="session">
+  <div class="session-head">
+    <span>faultwall --proxy --listen :5433 --upstream localhost:5432</span>
+    <span class="live">POLICY_ENFORCEMENT=enforce</span>
+  </div>
+  <div class="session-body">
+    <div class="lg"><span class="reason">connect</span>  <span class="agent">agent=cursor-ai/summarize-feedback</span></div>
+    <div class="lg"><span class="ok">ALLOW</span>  <span class="agent">cursor-ai/summarize-feedback</span>  <span class="q">SELECT * FROM feedback LIMIT 100;</span></div>
+    <div class="lg"><span class="no">BLOCK</span>  <span class="agent">cursor-ai/summarize-feedback</span>  <span class="q">DROP TABLE users;</span>  <span class="reason">blocked_operation</span></div>
+    <div class="lg"><span class="no">BLOCK</span>  <span class="agent">rogue-bot/steal</span>               <span class="q">SELECT * FROM users;</span>  <span class="reason">agent_not_in_policy</span></div>
+    <div class="lg"><span class="no">BLOCK</span>  <span class="agent">cursor-ai/summarize-feedback</span>  <span class="q">SELECT pg_read_file('/etc/passwd');</span>  <span class="reason">blocked_function</span></div>
+    <div class="s-note">└─ blocked queries <em>never reach PostgreSQL</em> · parsed with the real PostgreSQL C parser (pg_query_go) · sub-3ms overhead</div>
+  </div>
+</section>
+
+<section class="facts">
+  <div class="facts-head">
+    <div class="no">§1 — MECHANISM</div>
+    <h2>No SDK. No code changes. No schema changes.</h2>
+  </div>
+  <table>
+    <tr><td class="k">how it sits</td><td class="v"><b>Inline L7 proxy.</b> Agents connect to :5433, FaultWall parses every statement — Simple and Extended Query Protocol — and only allowed queries reach :5432.</td></tr>
+    <tr><td class="k">who ran what</td><td class="v">Agents identify via <code>application_name</code>: <code>agent:cursor-ai:mission:summarize</code>. Every query attributed to an agent and a mission. Unlisted agents are denied by default.</td></tr>
+    <tr><td class="k">what it parses</td><td class="v"><b>The real PostgreSQL C parser</b> (pg_query_go) — not regex. DROP hidden in a CTE, blocked functions like <code>pg_read_file</code> and <code>pg_sleep</code>, row limits, table scope: all enforced per agent.</td></tr>
+    <tr><td class="k">what it costs you</td><td class="v"><b>Sub-3ms overhead per query.</b> Policy check in memory. No LLM in the hot path, no API keys, no network round-trips. Fail-open on internal errors — it won't break your app.</td></tr>
+    <tr><td class="k">when you don't trust it yet</td><td class="v">Start in <b>monitor mode</b> — dashboard, anomaly detection, cost attribution, Slack alerts, no blocking. Flip to enforce when the violation log matches your intent.</td></tr>
+    <tr><td class="k">where it runs</td><td class="v">Any Postgres 14+ that speaks wire protocol: <b>RDS, Aurora, Neon, self-hosted</b>. Any client: psql, psycopg2, pgx, SQLAlchemy, JDBC. Plus a <b>10-tool MCP server</b> so agents can check their own policies.</td></tr>
+  </table>
+</section>
+
+<section class="modes">
+  <div class="mode">
+    <div class="tag">MODE 1 — RECOMMENDED</div>
+    <h3>Proxy · enforce</h3>
+    <p>Inline between agents and PostgreSQL. Every query parsed and checked before it executes. Violations blocked, connection preserved.</p>
+    <div class="run"><span class="c"># enforce policy inline</span>
+POLICY_ENFORCEMENT=enforce \
+./faultwall --proxy --listen :5433 \
+  --upstream localhost:5432 \
+  --policies ./policies.yaml</div>
+  </div>
+  <div class="mode">
+    <div class="tag dim">MODE 2 — OBSERVE</div>
+    <h3>Monitor · sidecar</h3>
+    <p>Read-only sidecar polling pg_stat_activity. Dashboard, per-agent baselines, anomaly detection, Slack alerts. Not in the data path.</p>
+    <div class="run"><span class="c"># observe only, no blocking</span>
+DATABASE_URL="postgres://…" \
+POLICY_FILE=./policies.yaml \
+./faultwall</div>
+  </div>
+</section>
+
+<section class="pricing">
+  <div class="p-copy"><b>Free to self-host.</b> $200/mo when you want it managed.<span>From install to first blocked query in 5 minutes.</span></div>
+  <a class="btn-solid" href="#">Get started</a>
+</section>
+
+<footer><span>© 2026 faultwall</span><span>shreyas@faultwall.com</span></footer>
+
+</div>
+<script>
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  t.classList.add('on');
+  document.getElementById('cmdText').textContent = t.dataset.cmd;
+}));
+</script>
+</body>
+</html>

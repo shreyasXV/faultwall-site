@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaultWall — v1 · Restrained / Enterprise Trust</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   V1 — RESTRAINED / ENTERPRISE TRUST
+   Refactoring UI: one accent, hierarchy via weight+space.
+   Linear-school: quiet surfaces, no orbs, no noise.
+   ═══════════════════════════════════════════════════════ */
+:root {
+  --bg: #0b0c0f;            /* warm near-black, never #000 */
+  --surface: #101217;
+  --border: rgba(255,255,255,0.07);
+  --border-strong: rgba(255,255,255,0.12);
+  --text: #eceef2;
+  --text-2: rgba(236,238,242,0.62);  /* opacity-based secondary */
+  --text-3: rgba(236,238,242,0.38);
+  --accent: #8b7cf8;        /* ONE accent. nothing else. */
+  --good: #4ade80;
+  --bad: #f87171;
+  --mono: 'JetBrains Mono', monospace;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Instrument Sans',-apple-system,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.6;
+}
+::selection { background:var(--accent); color:#0b0c0f; }
+a { color:inherit; text-decoration:none; }
+
+/* ── Nav: flat bar, hairline border. No pill, no glass. ── */
+nav {
+  display:flex; align-items:center; justify-content:space-between;
+  max-width:1120px; margin:0 auto; padding:20px 32px;
+}
+.nav-wrap { border-bottom:1px solid var(--border); position:sticky; top:0; background:rgba(11,12,15,0.85); backdrop-filter:blur(12px); z-index:100; }
+.brand { font-weight:700; font-size:16px; letter-spacing:-0.01em; display:flex; align-items:center; gap:9px; }
+.brand-mark { width:18px; height:18px; border:2px solid var(--accent); border-radius:4px; position:relative; }
+.brand-mark::after { content:''; position:absolute; left:50%; top:-2px; bottom:-2px; width:2px; background:var(--accent); }
+.nav-links { display:flex; gap:32px; font-size:14px; color:var(--text-2); }
+.nav-links a { transition:color .2s var(--ease); }
+.nav-links a:hover { color:var(--text); }
+.nav-right { display:flex; gap:12px; align-items:center; }
+.btn-ghost { font-size:14px; color:var(--text-2); padding:7px 14px; }
+.btn-primary {
+  font-size:14px; font-weight:600; color:#0b0c0f;
+  background:var(--text); border-radius:6px; padding:7px 16px;
+  transition:transform .2s var(--ease), background .2s var(--ease);
+}
+.btn-primary:hover { background:#fff; transform:translateY(-1px); }
+
+/* ── Hero: left-aligned, asymmetric. Space is the design. ── */
+.hero {
+  max-width:1120px; margin:0 auto;
+  padding:140px 32px 96px;
+  display:grid; grid-template-columns: minmax(0, 6.5fr) minmax(0, 5.5fr);
+  gap:72px; align-items:center;
+}
+.eyebrow {
+  font-family:var(--mono); font-size:12px; letter-spacing:0.08em;
+  color:var(--text-3); text-transform:uppercase;
+  display:flex; align-items:center; gap:10px; margin-bottom:28px;
+}
+.eyebrow .dot { width:6px; height:6px; border-radius:50%; background:var(--good); animation:pulse 2.4s var(--ease) infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+h1 {
+  font-size:clamp(40px, 4.6vw, 62px);
+  font-weight:600; letter-spacing:-0.035em; line-height:1.05;
+  margin-bottom:24px;
+  text-wrap:balance;
+}
+h1 .accent { color:var(--accent); }
+.hero-sub {
+  font-size:17px; color:var(--text-2); line-height:1.65;
+  max-width:46ch; margin-bottom:40px;
+}
+.hero-ctas { display:flex; gap:14px; align-items:center; }
+.btn-lg { padding:12px 24px; font-size:15px; border-radius:7px; }
+.btn-outline {
+  font-size:15px; font-weight:500; color:var(--text-2);
+  border:1px solid var(--border-strong); border-radius:7px; padding:12px 24px;
+  transition:border-color .2s var(--ease), color .2s var(--ease);
+}
+.btn-outline:hover { border-color:var(--text-3); color:var(--text); }
+.hero-note { margin-top:20px; font-size:13px; color:var(--text-3); font-family:var(--mono); }
+
+/* ── Hero right: one quiet console card. The proof, not a toy. ── */
+.console {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; overflow:hidden;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 48px -24px rgba(0,0,0,0.6);
+}
+.console-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:12px; color:var(--text-3);
+}
+.console-badge { display:flex; align-items:center; gap:7px; }
+.console-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--good); }
+.console-body { padding:18px 16px; font-family:var(--mono); font-size:12.5px; line-height:2.05; }
+.row { display:flex; gap:12px; white-space:nowrap; overflow:hidden; }
+.row .t { color:var(--text-3); }
+.row .agent { color:var(--text-2); }
+.row .q { color:var(--text-2); overflow:hidden; text-overflow:ellipsis; }
+.row .ok { color:var(--good); }
+.row .block { color:var(--bad); font-weight:500; }
+.row.blocked { background:rgba(248,113,113,0.06); margin:0 -16px; padding:0 16px; border-left:2px solid var(--bad); }
+
+/* ── Proof strip: numbers carry the weight ── */
+.proof {
+  border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+}
+.proof-inner {
+  max-width:1120px; margin:0 auto; padding:0 32px;
+  display:grid; grid-template-columns:repeat(4,1fr);
+}
+.stat { padding:40px 24px; border-left:1px solid var(--border); }
+.stat:first-child { border-left:none; padding-left:0; }
+.stat .num { font-size:32px; font-weight:600; letter-spacing:-0.03em; }
+.stat .label { font-size:13px; color:var(--text-3); margin-top:4px; }
+
+/* ── Feature section: label/value pattern, left-aligned ── */
+.features { max-width:1120px; margin:0 auto; padding:120px 32px; }
+.features-head { max-width:56ch; margin-bottom:72px; }
+.kicker { font-family:var(--mono); font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); margin-bottom:16px; }
+h2 { font-size:clamp(28px,3vw,38px); font-weight:600; letter-spacing:-0.03em; line-height:1.15; margin-bottom:16px; text-wrap:balance; }
+.features-head p { color:var(--text-2); font-size:16px; }
+.feature-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.feature { background:var(--bg); padding:32px 28px; transition:background .25s var(--ease); }
+.feature:hover { background:var(--surface); }
+.feature h3 { font-size:15px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
+.feature h3 .fi { color:var(--accent); font-family:var(--mono); font-size:12px; }
+.feature p { font-size:14px; color:var(--text-2); line-height:1.6; }
+
+footer { border-top:1px solid var(--border); }
+.foot-inner { max-width:1120px; margin:0 auto; padding:32px; font-size:13px; color:var(--text-3); display:flex; justify-content:space-between; }
+
+@media (max-width:900px) {
+  .hero { grid-template-columns:1fr; padding-top:88px; gap:48px; }
+  .proof-inner { grid-template-columns:repeat(2,1fr); }
+  .stat:nth-child(3) { border-left:none; padding-left:0; }
+  .feature-grid { grid-template-columns:1fr; }
+  .nav-links { display:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="nav-wrap">
+  <nav>
+    <a class="brand" href="#"><span class="brand-mark"></span>FaultWall</a>
+    <div class="nav-links">
+      <a href="#">Features</a><a href="#">How it works</a><a href="#">Docs</a><a href="#">Pricing</a>
+    </div>
+    <div class="nav-right">
+      <a class="btn-ghost" href="#">GitHub</a>
+      <a class="btn-primary" href="#">Get started</a>
+    </div>
+  </nav>
+</div>
+
+<section class="hero">
+  <div>
+    <div class="eyebrow"><span class="dot"></span>Inline proxy for PostgreSQL</div>
+    <h1>Trust your AI agents with <span class="accent">production.</span></h1>
+    <p class="hero-sub">Faultwall is the trust layer between AI agents and your database. It sees every query an agent runs, knows which agent ran it, and stops the ones that shouldn't execute.</p>
+    <div class="hero-ctas">
+      <a class="btn-primary btn-lg" href="#">Get started</a>
+      <a class="btn-outline" href="#">View on GitHub</a>
+    </div>
+    <div class="hero-note">$ brew install faultwall &nbsp;·&nbsp; no driver changes</div>
+  </div>
+  <div class="console" aria-label="Live query log">
+    <div class="console-head">
+      <span>faultwall · policy: prod-agents.yaml</span>
+      <span class="console-badge"><span class="dot"></span>enforcing</span>
+    </div>
+    <div class="console-body">
+      <div class="row"><span class="t">14:02:11</span><span class="agent">agent:support-bot</span><span class="q">SELECT * FROM tickets WHERE…</span><span class="ok">pass</span></div>
+      <div class="row"><span class="t">14:02:13</span><span class="agent">agent:analytics</span><span class="q">SELECT count(*) FROM orders…</span><span class="ok">pass</span></div>
+      <div class="row blocked"><span class="t">14:02:14</span><span class="agent">agent:support-bot</span><span class="q">DROP TABLE users;</span><span class="block">blocked</span></div>
+      <div class="row"><span class="t">14:02:14</span><span class="agent">agent:support-bot</span><span class="q">SELECT name FROM customers…</span><span class="ok">pass</span></div>
+      <div class="row"><span class="t">14:02:17</span><span class="agent">agent:billing</span><span class="q">UPDATE invoices SET status…</span><span class="ok">pass</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="proof">
+  <div class="proof-inner">
+    <div class="stat"><div class="num">&lt;1ms</div><div class="label">added latency, inline</div></div>
+    <div class="stat"><div class="num">0</div><div class="label">code changes required</div></div>
+    <div class="stat"><div class="num">100%</div><div class="label">of queries parsed &amp; attributed</div></div>
+    <div class="stat"><div class="num">1</div><div class="label">binary. Go, self-hosted</div></div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="features-head">
+    <div class="kicker">Why FaultWall</div>
+    <h2>Security and reliability in one binary.</h2>
+    <p>Inline proxy that blocks rogue queries before they execute. No instrumentation required.</p>
+  </div>
+  <div class="feature-grid">
+    <div class="feature"><h3><span class="fi">01</span>Agent Firewall</h3><p>An inline L7 proxy between your agents and PostgreSQL. Mission-scoped policies define what each agent can do.</p></div>
+    <div class="feature"><h3><span class="fi">02</span>Agent Identity</h3><p>Agents identify via application_name. FaultWall knows who is running what, on every query.</p></div>
+    <div class="feature"><h3><span class="fi">03</span>Real-Time Enforcement</h3><p>Queries are parsed and blocked before reaching PostgreSQL. DROP TABLE never executes.</p></div>
+    <div class="feature"><h3><span class="fi">04</span>Both Query Protocols</h3><p>Simple and Extended Query Protocol. Works with psql, psycopg2, pgx, SQLAlchemy, JDBC.</p></div>
+    <div class="feature"><h3><span class="fi">05</span>Anomaly Detection</h3><p>Statistical baselines per agent. Z-score deviations flagged. No LLM, no API keys — runs locally.</p></div>
+    <div class="feature"><h3><span class="fi">06</span>AI-Native MCP</h3><p>10-tool MCP server lets agents check their own policies and violations autonomously.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-inner"><span>© 2026 FaultWall</span><span>shreyas@faultwall.com</span></div>
+</footer>
+
+</body>
+</html>

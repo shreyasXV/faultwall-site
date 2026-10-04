@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaultWall: free 48-hour read of your agent's database access</title>
+<meta name="description" content="You ran faultwall audit and saw what your agent is allowed to do. The 48-hour read shows what it actually does.">
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0e0c;
+  --grid: rgba(140,180,140,0.05);
+  --line: rgba(190,220,190,0.14);
+  --text: #dce5dc;
+  --text-2: rgba(220,229,220,0.58);
+  --text-3: rgba(220,229,220,0.32);
+  --phos: #4ae56a;
+  --phos-dim: rgba(74,229,106,0.12);
+  --alarm: #ff4b4b;
+  --warn: #e5c84a;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family:var(--mono); background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased; line-height:1.6;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:32px 32px;
+}
+::selection { background:var(--phos); color:var(--bg); }
+a { color:inherit; text-decoration:none; }
+
+.frame { max-width:1080px; margin:0 auto; border-left:1px solid var(--line); border-right:1px solid var(--line); background:rgba(12,14,12,0.55); }
+
+/* ── Nav ── */
+nav {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 28px; border-bottom:1px solid var(--line);
+  font-size:13px; position:sticky; top:0; background:rgba(12,14,12,0.92); backdrop-filter:blur(8px); z-index:50;
+}
+.brand { display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:0.02em; font-size:14px; }
+.brand img { height:24px; width:auto; display:block; }
+.nav-r { display:flex; gap:24px; color:var(--text-2); font-size:12.5px; }
+.nav-r a:hover { color:var(--phos); }
+
+/* ── Hero ── */
+.hero { padding:72px 28px 56px; border-bottom:1px solid var(--line); }
+.man-line { font-size:12.5px; color:var(--text-3); margin-bottom:36px; }
+.man-line b { color:var(--text-2); font-weight:500; }
+h1 {
+  font-family:var(--sans);
+  font-size:clamp(36px, 4.8vw, 58px);
+  font-weight:700; letter-spacing:-0.03em; line-height:1.08;
+  max-width:22ch; text-wrap:balance; margin-bottom:20px;
+}
+h1 .ph { color:var(--phos); }
+.hero-sub {
+  font-family:var(--sans); font-size:16.5px; color:var(--text-2);
+  max-width:58ch; line-height:1.7; margin-bottom:14px;
+}
+.hero-sub b { color:var(--text); font-weight:600; }
+.hero-hook { font-family:var(--sans); font-size:14.5px; color:var(--text-3); max-width:58ch; margin-bottom:36px; line-height:1.65; }
+.prompt-row { display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; }
+.cmd-box {
+  display:flex; flex-direction:column; justify-content:center; gap:4px;
+  border:1px solid var(--line); background:rgba(0,0,0,0.35);
+  padding:12px 18px; font-size:13px;
+}
+.cmd-box .row { display:flex; gap:10px; align-items:center; }
+.cmd-box .dollar { color:var(--phos); }
+.cmd-box .tabs { display:flex; gap:2px; margin-bottom:8px; }
+.cmd-box .tab {
+  font-size:11px; color:var(--text-3); padding:3px 12px; cursor:pointer;
+  border:1px solid transparent; transition:all .18s var(--ease); user-select:none;
+}
+.cmd-box .tab:hover { color:var(--text-2); }
+.cmd-box .tab.on { color:var(--phos); border-color:var(--line); background:rgba(74,229,106,0.06); }
+.btn-solid {
+  display:flex; align-items:center;
+  background:var(--phos); color:var(--bg); font-weight:600; font-size:14px;
+  padding:13px 24px; border:1px solid var(--phos);
+  transition:all .2s var(--ease);
+}
+.btn-solid:hover { background:transparent; color:var(--phos); }
+.btn-hollow {
+  display:flex; align-items:center;
+  border:1px solid var(--line); color:var(--text-2); font-size:14px; padding:13px 24px;
+  transition:all .2s var(--ease);
+}
+.btn-hollow:hover { border-color:var(--text-2); color:var(--text); }
+
+/* ── Stats strip ── */
+.stats { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--line); }
+.stat { padding:26px 28px; border-right:1px solid var(--line); }
+.stat:last-child { border-right:none; }
+.stat .n { font-family:var(--sans); font-size:26px; font-weight:700; letter-spacing:-0.02em; color:var(--phos); }
+.stat .l { font-size:12px; color:var(--text-3); margin-top:4px; line-height:1.5; }
+
+/* ── Session ── */
+.session { border-bottom:1px solid var(--line); }
+.session-head {
+  display:flex; justify-content:space-between; padding:14px 28px;
+  border-bottom:1px solid var(--line); font-size:12px; color:var(--text-3);
+}
+.session-head .live { color:var(--phos); }
+.session-head .live::before { content:'● '; animation:blink 2s steps(1) infinite; }
+@keyframes blink { 50% { opacity:0.3; } }
+.session-body { padding:26px 28px; font-size:13px; line-height:2.1; overflow-x:auto; }
+.lg { white-space:nowrap; }
+.lg .ok { color:var(--phos); }
+.lg .no { color:var(--alarm); }
+.lg .agent { color:var(--text-2); }
+.lg .reason { color:var(--text-3); }
+.lg .q { color:var(--text); }
+.s-note { color:var(--text-3); font-size:12px; margin-top:14px; }
+.s-note em { color:var(--phos); font-style:normal; }
+
+/* ── Section scaffolding ── */
+.sec { border-bottom:1px solid var(--line); }
+.sec-head { padding:56px 28px 8px; }
+.sec-head .no { color:var(--phos); font-size:12px; letter-spacing:0.1em; }
+h2 { font-family:var(--sans); font-size:clamp(24px,3vw,34px); font-weight:700; letter-spacing:-0.025em; margin-top:8px; }
+.sec-head p { font-family:var(--sans); font-size:14.5px; color:var(--text-3); margin-top:10px; max-width:60ch; }
+
+/* ── Fact table ── */
+table.facts { width:100%; border-collapse:collapse; margin-top:32px; }
+table.facts tr { border-top:1px solid var(--line); }
+table.facts tr:hover td { background:var(--phos-dim); }
+table.facts td { padding:18px 28px; vertical-align:top; font-size:13.5px; }
+table.facts td.k { width:230px; color:var(--phos); font-size:12.5px; letter-spacing:0.04em; }
+table.facts td.v { color:var(--text-2); font-family:var(--sans); font-size:14.5px; line-height:1.65; }
+table.facts td.v b { color:var(--text); font-weight:600; }
+table.facts td.v code { font-family:var(--mono); font-size:12.5px; color:var(--phos); background:rgba(74,229,106,0.08); padding:1px 6px; }
+
+/* ── Policy example ── */
+.policy-strip { display:grid; grid-template-columns:1fr 1fr; }
+.policy-copy { padding:36px 28px; border-right:1px solid var(--line); }
+.policy-copy h3 { font-family:var(--sans); font-size:19px; font-weight:700; margin-bottom:10px; }
+.policy-copy p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.65; }
+.policy-code { padding:36px 28px; font-size:12.5px; line-height:2; }
+.policy-code .k { color:var(--phos); }
+.policy-code .ok { color:var(--phos); }
+.policy-code .bad { color:var(--alarm); }
+.policy-code .c { color:var(--text-3); }
+
+/* ── Dashboard ── */
+.dash { padding:36px 28px 56px; }
+.dash img { width:100%; display:block; border:1px solid var(--line); }
+.dash .cap { font-size:12px; color:var(--text-3); margin-top:10px; }
+
+/* ── Compat table ── */
+table.compat { width:100%; border-collapse:collapse; margin-top:32px; }
+table.compat tr { border-top:1px solid var(--line); }
+table.compat td { padding:14px 28px; font-size:13px; }
+table.compat td.st { width:90px; }
+table.compat td.st.g { color:var(--phos); }
+table.compat td.st.y { color:var(--warn); }
+table.compat td.name { color:var(--text); font-family:var(--sans); font-size:14px; font-weight:600; width:280px; }
+table.compat td.sub { color:var(--text-3); font-family:var(--sans); font-size:13px; }
+table.compat td.sub a { color:var(--text-2); border-bottom:1px solid var(--line); }
+table.compat td.sub a:hover { color:var(--phos); border-color:var(--phos); }
+.compat-foot { padding:18px 28px 48px; font-size:12px; color:var(--text-3); font-family:var(--sans); line-height:1.7; }
+.compat-foot b { color:var(--text-2); }
+.compat-foot a { color:var(--text-2); border-bottom:1px solid var(--line); }
+.compat-foot a:hover { color:var(--phos); border-color:var(--phos); }
+
+/* ── Steps ── */
+.steps { counter-reset:step; }
+.step { display:grid; grid-template-columns:64px 1fr; border-top:1px solid var(--line); }
+.step .num { padding:26px 0 26px 28px; color:var(--phos); font-size:13px; }
+.step .body { padding:26px 28px 26px 0; }
+.step h3 { font-family:var(--sans); font-size:16px; font-weight:700; margin-bottom:6px; }
+.step p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.65; }
+.step code {
+  display:block; margin-top:10px; padding:10px 14px; border:1px solid var(--line);
+  background:rgba(0,0,0,0.35); font-size:12px; color:var(--text-2); overflow-x:auto; white-space:pre;
+}
+
+/* ── Architecture ── */
+.arch { padding:36px 28px 56px; font-size:13px; line-height:1.9; overflow-x:auto; }
+.arch pre { font-family:var(--mono); color:var(--text-2); white-space:pre; }
+.arch .ph { color:var(--phos); }
+.arch .dim { color:var(--text-3); }
+
+/* ── Modes ── */
+.modes { display:grid; grid-template-columns:1fr 1fr; }
+.mode { padding:36px 28px; }
+.mode:first-child { border-right:1px solid var(--line); }
+.mode .tag { font-size:11px; letter-spacing:0.1em; color:var(--phos); margin-bottom:12px; }
+.mode .tag.dim { color:var(--text-3); }
+.mode h3 { font-family:var(--sans); font-size:19px; font-weight:700; margin-bottom:10px; }
+.mode p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.65; margin-bottom:16px; }
+.mode ul { list-style:none; margin-bottom:16px; }
+.mode li { font-family:var(--sans); font-size:13.5px; color:var(--text-2); padding:3px 0; }
+.mode li::before { content:'+ '; color:var(--phos); font-family:var(--mono); }
+.mode .run { border:1px solid var(--line); background:rgba(0,0,0,0.35); padding:12px 16px; font-size:11.5px; color:var(--text-2); overflow-x:auto; white-space:pre; line-height:1.8; }
+.mode .run .c { color:var(--text-3); }
+
+/* ── Tuning / enterprise ── */
+.duo { display:grid; grid-template-columns:1fr 1fr; }
+.duo > div { padding:36px 28px; }
+.duo > div:first-child { border-right:1px solid var(--line); }
+.duo h3 { font-family:var(--sans); font-size:17px; font-weight:700; margin-bottom:10px; }
+.duo p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.7; }
+.duo .fine { font-size:12.5px; color:var(--text-3); margin-top:10px; }
+.duo .flow { margin-top:16px; font-size:13px; color:var(--text-3); }
+.duo .flow b { color:var(--phos); font-weight:600; }
+.duo a.mailto { display:inline-block; margin-top:16px; font-size:13px; color:var(--phos); border-bottom:1px solid var(--phos); padding-bottom:1px; }
+
+/* ── Pricing ── */
+.pricing { display:grid; grid-template-columns:1fr 1fr; }
+.price { padding:36px 28px; }
+.price:first-child { border-right:1px solid var(--line); }
+.price .name { font-size:12px; letter-spacing:0.1em; color:var(--text-3); }
+.price.reco .name { color:var(--phos); }
+.price .amt { font-family:var(--sans); font-size:40px; font-weight:700; letter-spacing:-0.02em; margin:10px 0 4px; }
+.price .amt span { font-size:15px; color:var(--text-3); font-weight:400; }
+.price .tag { font-family:var(--sans); font-size:13.5px; color:var(--text-2); margin-bottom:18px; }
+.price ul { list-style:none; margin-bottom:24px; }
+.price li { font-family:var(--sans); font-size:13.5px; color:var(--text-2); padding:4px 0; }
+.price li::before { content:'+ '; color:var(--phos); font-family:var(--mono); }
+.price-foot { padding:0 28px 40px; font-size:12.5px; color:var(--text-3); font-family:var(--sans); }
+
+/* ── CTA ── */
+.cta { padding:72px 28px; text-align:left; }
+.cta h2 { max-width:28ch; }
+.cta p { font-family:var(--sans); font-size:14.5px; color:var(--text-2); margin:14px 0 28px; max-width:56ch; }
+.cta-row { display:flex; gap:12px; flex-wrap:wrap; }
+
+/* ── Footer ── */
+footer { padding:28px; font-size:12px; color:var(--text-3); }
+.foot-grid { display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:20px; }
+.foot-brand { display:flex; align-items:center; gap:8px; color:var(--text-2); font-size:13px; font-weight:600; }
+.foot-brand img { height:18px; }
+.foot-links { display:flex; gap:22px; }
+.foot-links a:hover { color:var(--phos); }
+.foot-bottom { border-top:1px solid var(--line); padding-top:16px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.foot-bottom a { color:var(--text-2); }
+.foot-bottom a:hover { color:var(--phos); }
+
+@media (max-width:860px) {
+  .frame { border:none; }
+  .stats { grid-template-columns:1fr 1fr; }
+  .stat:nth-child(2) { border-right:none; }
+  .stat:nth-child(1), .stat:nth-child(2) { border-bottom:1px solid var(--line); }
+  table.facts td.k { width:auto; display:block; padding-bottom:0; }
+  table.facts td.v { display:block; padding-top:6px; }
+  .nav-r { display:none; }
+  .modes, .duo, .pricing, .policy-strip { grid-template-columns:1fr; }
+  .mode:first-child, .duo > div:first-child, .price:first-child, .policy-copy { border-right:none; border-bottom:1px solid var(--line); }
+  table.compat td.name { width:auto; }
+}
+@media (prefers-reduced-motion: reduce) { .session-head .live::before { animation:none; } }
+</style>
+<style>
+.read { padding:72px 28px 56px; border-bottom:1px solid var(--line); }
+.read h1 { font-size:clamp(30px,4.4vw,46px); }
+.read .lead { font-family:var(--sans); font-size:16px; color:var(--text-2); max-width:62ch; margin:22px 0 0; line-height:1.65; }
+.steps { border-bottom:1px solid var(--line); }
+.step { display:grid; grid-template-columns:72px 1fr; padding:26px 28px; border-top:1px solid var(--line); }
+.step .n { color:var(--phos); font-size:12px; letter-spacing:0.1em; padding-top:3px; }
+.step h3 { font-size:15px; font-weight:600; margin-bottom:6px; }
+.step p { font-family:var(--sans); font-size:14.5px; color:var(--text-2); max-width:64ch; line-height:1.65; }
+.facts2 { padding:36px 28px; border-bottom:1px solid var(--line); font-family:var(--sans); font-size:14.5px; color:var(--text-2); line-height:1.8; }
+.facts2 b { color:var(--text); font-weight:600; font-family:var(--mono); font-size:13px; display:inline-block; min-width:120px; }
+.ask { padding:48px 28px 60px; border-bottom:1px solid var(--line); }
+.ask p { font-family:var(--sans); font-size:14.5px; color:var(--text-2); max-width:60ch; margin:0 0 22px; line-height:1.65; }
+</style>
+</head>
+<body>
+<div class="frame">
+
+<nav>
+  <a class="brand" href="/"><img src="logo.png" alt="FaultWall">faultwall</a>
+  <div class="nav-r">
+    <a href="#mechanism">how it works</a>
+    <a href="#compatibility">compatibility</a>
+    <a href="#pricing">pricing</a>
+    <a href="https://github.com/shreyasXV/faultwall">github</a>
+    <a href="https://app.faultwall.com">dashboard</a>
+  </div>
+</nav>
+
+<section class="read">
+  <div class="man-line"><b>FAULTWALL</b> free 48-hour read</div>
+  <h1>Free 48-hour read of your agent's <span class="ph">database access.</span></h1>
+  <p class="lead">You ran <code>faultwall audit</code> and saw what your agent's database user is allowed to do. The 48-hour read shows what it actually does.</p>
+</section>
+
+<section class="steps">
+  <div class="step"><div class="n">01</div><div><h3>One docker command</h3><p>Run it next to your database. Watch mode only, so nothing gets blocked.</p></div></div>
+  <div class="step"><div class="n">02</div><div><h3>A report after 48 hours</h3><p>What each agent ran, which statements a policy would have stopped, and a proposed policy your security lead can review.</p></div></div>
+  <div class="step"><div class="n">03</div><div><h3>Your data stays put</h3><p>Query values and results never leave your network. We see agent names, table names, query shapes and decisions.</p></div></div>
+  <div class="step"><div class="n">04</div><div><h3>Easy to remove</h3><p>Remove it with one command whenever you want.</p></div></div>
+</section>
+
+<section class="ask">
+  <p>We're taking 4 free founding design partners this month, then it's $200/mo.</p>
+  <div class="cta-row">
+    <a class="btn-solid" href="mailto:shreyas@faultwall.com?subject=48-hour%20read">Book 20 minutes with Shreyas</a>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-grid">
+    <div class="foot-brand"><img src="logo.png" alt="FaultWall">faultwall<span style="color:var(--text-3); font-weight:400;">, the trust layer between AI agents and your database.</span></div>
+    <div class="foot-links">
+      <a href="https://github.com/shreyasXV/faultwall#quick-start-5-minutes">quick start</a>
+      <a href="https://github.com/shreyasXV/faultwall#full-api-reference">api reference</a>
+      <a href="https://github.com/shreyasXV/faultwall">github</a>
+      <a href="https://twitter.com/FaultWall">twitter</a>
+      <a href="mailto:shreyas@faultwall.com">contact</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>Built by <a href="https://github.com/shreyasXV">Shreyas Shubham</a> · © 2026</span>
+    <span>faultwall.com</span>
+  </div>
+</footer>
+</div>
+</body>
+</html>

@@ -261,6 +261,8 @@ footer { padding:28px; font-size:12px; color:var(--text-3); }
 @media (prefers-reduced-motion: reduce) { .session-head .live::before { animation:none; } }
 </style>
 <style>
+.frame { --text-3: rgba(220,229,220,0.53); }
+.read .cta-row { margin-top:30px; }
 .read { padding:72px 28px 56px; border-bottom:1px solid var(--line); }
 .read h1 { font-size:clamp(30px,4.4vw,46px); }
 .read .lead { font-family:var(--sans); font-size:16px; color:var(--text-2); max-width:62ch; margin:22px 0 0; line-height:1.65; }
@@ -293,6 +295,9 @@ footer { padding:28px; font-size:12px; color:var(--text-3); }
   <div class="man-line"><b>FAULTWALL</b> free 48-hour read</div>
   <h1>Free 48-hour read of your agent's <span class="ph">database access.</span></h1>
   <p class="lead">You ran <code>faultwall audit</code> and saw what your agent's database user is allowed to do. The 48-hour read shows what it actually does.</p>
+  <div class="cta-row">
+    <a class="btn-solid" href="mailto:shreyas@faultwall.com?subject=48-hour%20read">Email Shreyas to book 20 minutes</a>
+  </div>
 </section>
 
 <section class="steps">

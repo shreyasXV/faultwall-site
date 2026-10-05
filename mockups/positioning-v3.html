@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaultWall: control what your AI agents can do in Postgres</title>
+<meta name="description" content="Give each agent scoped access. FaultWall enforces configured rules on operations routed through its proxy, lets permitted work proceed, and holds selected writes for an authorized reviewer.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0e0c;
+  --grid: rgba(140,180,140,0.05);
+  --line: rgba(190,220,190,0.14);
+  --text: #dce5dc;
+  --text-2: rgba(220,229,220,0.58);
+  --text-3: rgba(220,229,220,0.32);
+  --phos: #4ae56a;
+  --phos-dim: rgba(74,229,106,0.12);
+  --alarm: #ff4b4b;
+  --warn: #e5c84a;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family:var(--mono); background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased; line-height:1.6;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:32px 32px;
+}
+::selection { background:var(--phos); color:var(--bg); }
+a { color:inherit; text-decoration:none; }
+.frame { max-width:1080px; margin:0 auto; border-left:1px solid var(--line); border-right:1px solid var(--line); background:rgba(12,14,12,0.55); }
+
+nav { display:flex; justify-content:space-between; align-items:center; padding:14px 28px; border-bottom:1px solid var(--line); font-size:13px; position:sticky; top:0; background:rgba(12,14,12,0.92); backdrop-filter:blur(8px); z-index:50; }
+.brand { display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:0.02em; font-size:14px; }
+.brand img { height:24px; width:auto; display:block; }
+.nav-r { display:flex; gap:24px; color:var(--text-2); font-size:12.5px; }
+.nav-r a:hover { color:var(--phos); }
+
+.hero { padding:72px 28px 56px; border-bottom:1px solid var(--line); }
+.man-line { font-size:12.5px; color:var(--text-2); margin-bottom:36px; }
+.man-line b { color:var(--text-2); font-weight:500; }
+h1 { font-family:var(--sans); font-size:clamp(36px, 4.8vw, 58px); font-weight:700; letter-spacing:-0.03em; line-height:1.08; max-width:20ch; text-wrap:balance; margin-bottom:22px; }
+h1 .ph { color:var(--phos); }
+.hero-sub { font-family:var(--sans); font-size:17px; color:var(--text-2); max-width:60ch; line-height:1.7; margin-bottom:36px; }
+.hero-sub b { color:var(--text); font-weight:600; }
+.prompt-row { display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; }
+.btn-solid { display:inline-flex; align-items:center; background:var(--phos); color:var(--bg); font-weight:600; font-size:14px; padding:13px 24px; border:1px solid var(--phos); transition:all .2s var(--ease); }
+.btn-solid:hover { background:transparent; color:var(--phos); }
+.btn-hollow { display:inline-flex; align-items:center; border:1px solid var(--line); color:var(--text-2); font-size:14px; padding:13px 24px; transition:all .2s var(--ease); }
+.btn-hollow:hover { border-color:var(--text-2); color:var(--text); }
+.works-with { margin-top:28px; font-size:12px; color:var(--text-2); max-width:none; }
+.works-with b { color:var(--text-2); font-weight:500; }
+
+/* session log */
+.session { border-bottom:1px solid var(--line); }
+.session-head { color:var(--text-2) !important; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:14px 28px; border-bottom:1px solid var(--line); font-size:12px; color:var(--text-3); }
+.session-head .live { color:var(--phos); }
+.session-body { padding:22px 28px 26px; font-size:13px; line-height:2.15; overflow-x:auto; }
+.lg { white-space:nowrap; display:grid; grid-template-columns:76px 130px 1fr; gap:14px; }
+.lg .ok { color:var(--phos); }
+.lg .hold { color:var(--warn); }
+.lg .no { color:var(--alarm); }
+.lg .agent { color:var(--text-2); }
+.lg .q { color:var(--text); }
+.lg .r { color:var(--text-2); }
+.lg.sub { grid-template-columns:76px 130px 1fr; }
+.lg.sub .q { color:var(--text-2); }
+.s-note { color:var(--text-2); font-size:12px; margin-top:16px; font-family:var(--sans); }
+
+/* sections */
+.sec { border-bottom:1px solid var(--line); }
+.sec-head { padding:56px 28px 8px; }
+.sec-head .no { color:var(--phos); font-size:12px; letter-spacing:0.1em; }
+h2 { font-family:var(--sans); font-size:clamp(24px,3vw,34px); font-weight:700; letter-spacing:-0.025em; line-height:1.18; margin-top:8px; max-width:32ch; text-wrap:balance; }
+.sec-head p { font-family:var(--sans); font-size:15px; color:var(--text-2); margin-top:12px; max-width:62ch; line-height:1.65; }
+
+/* steps */
+.step { display:grid; grid-template-columns:64px 1fr; border-top:1px solid var(--line); }
+.step .num { padding:24px 0 24px 28px; color:var(--phos); font-size:13px; }
+.step .body { padding:24px 28px 24px 0; }
+.step h3 { font-family:var(--sans); font-size:16px; font-weight:700; margin-bottom:6px; }
+.step p { font-family:var(--sans); font-size:14.5px; color:var(--text-2); line-height:1.65; max-width:64ch; }
+.step code { font-family:var(--mono); font-size:12.5px; color:var(--phos); background:rgba(74,229,106,0.08); padding:1px 6px; }
+
+/* architecture */
+.arch { padding:28px 28px 20px; display:flex; justify-content:safe center; font-size:12.5px; line-height:1.85; overflow-x:auto; }
+.arch pre { font-family:var(--mono); color:var(--text-2); white-space:pre; }
+.arch .ph { color:var(--phos); }
+.arch .dim { color:var(--text-2); }
+.arch-notes { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--line); }
+.arch-notes > div { padding:24px 28px 32px; }
+.arch-notes > div:first-child { border-right:1px solid var(--line); }
+.arch-notes .k { font-size:11.5px; letter-spacing:0.08em; color:var(--phos); margin-bottom:8px; }
+.arch-notes p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.65; }
+
+/* fair questions */
+table.facts { width:100%; border-collapse:collapse; margin-top:32px; }
+table.facts tr { border-top:1px solid var(--line); }
+table.facts td { padding:20px 28px; vertical-align:top; }
+table.facts td.k { text-wrap:balance; width:300px; color:var(--text); font-family:var(--sans); font-size:15px; font-weight:600; line-height:1.5; }
+table.facts td.v { color:var(--text-2); font-family:var(--sans); font-size:14.5px; line-height:1.7; }
+
+/* scope */
+.scope { display:grid; grid-template-columns:1fr 1fr; margin-top:32px; border-top:1px solid var(--line); }
+.scope > div { padding:30px 28px 36px; }
+.scope > div:first-child { border-right:1px solid var(--line); }
+.scope .tag { font-size:11.5px; letter-spacing:0.1em; margin-bottom:16px; }
+.scope .tag.live { color:var(--phos); }
+.scope .tag.next { color:var(--warn); }
+.scope ul { list-style:none; }
+.scope li { font-family:var(--sans); font-size:14px; color:var(--text-2); padding:7px 0 7px 18px; text-indent:-18px; line-height:1.55; border-top:1px solid rgba(190,220,190,0.07); }
+.scope li:first-child { border-top:none; }
+.scope li b { color:var(--text); font-weight:600; }
+.scope .live li::before { content:'+ '; color:var(--phos); font-family:var(--mono); }
+.scope .next li::before { content:'~ '; color:var(--text-3); font-family:var(--mono); }
+.scope li code { font-family:var(--mono); font-size:12.5px; color:var(--phos); }
+
+/* evaluate */
+.eval { display:grid; grid-template-columns:1.2fr 1fr; }
+.eval > div { padding:36px 28px 44px; }
+.eval > div:first-child { border-right:1px solid var(--line); }
+.eval .lead { font-family:var(--sans); font-size:17px; color:var(--text); line-height:1.65; margin-bottom:24px; max-width:46ch; }
+.eval ol { list-style:none; counter-reset:e; }
+.eval ol li { counter-increment:e; font-family:var(--sans); font-size:14px; color:var(--text-2); padding:9px 0; display:grid; grid-template-columns:34px 1fr; border-top:1px solid var(--line); line-height:1.55; }
+.eval ol li::before { content:counter(e, decimal-leading-zero); color:var(--phos); font-family:var(--mono); font-size:12.5px; }
+.eval .k { font-size:11.5px; letter-spacing:0.08em; color:var(--phos); margin-bottom:12px; }
+.eval .measure li { font-family:var(--sans); font-size:14px; color:var(--text-2); padding:6px 0; list-style:none; }
+.eval .measure li::before { content:'> '; color:var(--phos); font-family:var(--mono); }
+.eval .fine { font-family:var(--sans); font-size:13px; color:var(--text-2); margin-top:18px; line-height:1.6; }
+
+footer { padding:28px; font-size:12px; color:var(--text-2); }
+.foot-grid { display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+.foot-brand { display:flex; align-items:center; gap:8px; color:var(--text-2); font-size:13px; font-weight:600; }
+.foot-brand img { height:18px; }
+.foot-links { display:flex; gap:22px; }
+.foot-links a:hover { color:var(--phos); }
+
+@media (max-width:860px) {
+  .frame { border:none; }
+  .nav-r { display:none; }
+  .hero { padding:48px 20px 40px; }
+  .sec-head { padding:44px 20px 8px; }
+  .session-head, .session-body { padding-left:20px; padding-right:20px; }
+  .step .num { padding-left:20px; }
+  .step .body { padding-right:20px; }
+  .arch { padding-left:20px; padding-right:20px; }
+  .arch-notes, .scope, .eval { grid-template-columns:1fr; }
+  .arch-notes > div:first-child, .scope > div:first-child, .eval > div:first-child { border-right:none; border-bottom:1px solid var(--line); }
+  .arch-notes > div, .scope > div, .eval > div { padding-left:20px; padding-right:20px; }
+  table.facts td { display:block; padding:0 20px; }
+  table.facts td.k { width:auto; padding-top:20px; }
+  table.facts td.v { padding-top:8px; padding-bottom:20px; }
+  footer { padding:24px 20px; }
+}
+.arch-m { display:none; }
+@media (max-width:860px) {
+  .arch pre { display:none; }
+  .arch { display:block; }
+  .arch-m { display:block; font-size:12.5px; color:var(--text-2); }
+  .arch-m .net { border:1px dashed var(--line); padding:14px 14px 10px; }
+  .arch-m .net-k { font-size:11px; letter-spacing:0.1em; color:var(--text-2); margin-bottom:10px; }
+  .arch-m .bx { border:1px solid var(--line); padding:9px 12px; color:var(--text); }
+  .arch-m .bx.ph { border-color:var(--phos); color:var(--phos); }
+  .arch-m .bx small { display:block; color:var(--text-2); font-size:11.5px; }
+  .arch-m .ar { padding:5px 0 5px 14px; color:var(--text-2); font-size:11.5px; }
+  .arch-m .ar.ph { color:var(--phos); }
+  .lg { white-space:normal; grid-template-columns:64px 1fr; row-gap:0; margin-bottom:6px; line-height:1.6; }
+  .lg .agent { grid-column:2; font-size:11.5px; }
+  .lg .q { grid-column:2; overflow-wrap:anywhere; }
+  .lg.sub { grid-template-columns:64px 1fr; }
+  .lg.sub span:empty { display:none; }
+  .lg.sub .q { grid-column:2; }
+  .session-body { line-height:1.6; }
+}
+</style>
+</head>
+<body>
+<div class="frame">
+
+<nav>
+  <a class="brand" href="/"><img src="../logo.png" alt="FaultWall">faultwall</a>
+  <div class="nav-r">
+    <a href="#how">how it works</a>
+    <a href="#questions">fair questions</a>
+    <a href="#scope">what's live</a>
+    <a href="#evaluate">evaluate</a>
+    <a href="https://github.com/shreyasXV/faultwall">github</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="man-line"><b>FAULTWALL</b> &nbsp;/&nbsp; access control for AI agents on PostgreSQL &nbsp;/&nbsp; <b>v0.7.0</b></div>
+  <h1>Control what your AI agents can do in <span class="ph">Postgres.</span></h1>
+  <p class="hero-sub">Give each agent <b>scoped access</b>. FaultWall enforces configured rules on operations routed through its proxy, lets permitted work proceed, and <b>holds selected writes for an authorized reviewer</b>. Review the decisions in one place.</p>
+  <div class="prompt-row">
+    <a class="btn-solid" href="mailto:shreyas@faultwall.com?subject=Evaluate%20one%20agent%20workflow">Evaluate one agent workflow with us</a>
+    <a class="btn-hollow" href="https://github.com/shreyasXV/faultwall">github ↗</a>
+  </div>
+  <div class="works-with">Works with agents that speak the Postgres wire protocol, no rewrite. Tested with <b>psycopg2, psycopg3, SQLAlchemy, asyncpg, node-postgres</b>.</div>
+</section>
+
+<section class="session">
+  <div class="session-head">
+    <span>agent: support-agent &nbsp;·&nbsp; db: orders &nbsp;·&nbsp; reviewer: dana@acme.test</span>
+    <span class="live">proxy v0.7.0 · enforce</span>
+  </div>
+  <div class="session-body">
+    <div class="lg"><span class="ok">ALLOW</span><span class="agent">support-agent</span><span class="q">SELECT id, status FROM orders WHERE id IN (?, ?, ?)</span></div>
+    <div class="lg"><span class="hold">HOLD</span><span class="agent">support-agent</span><span class="q">UPDATE orders SET status = ? WHERE id = ?</span></div>
+    <div class="lg sub"><span></span><span></span><span class="q">└ waiting at the proxy. Row unchanged. Reviewer sees the shape, not the values.</span></div>
+    <div class="lg"><span class="ok">APPROVE</span><span class="agent">dana@acme.test</span><span class="q">UPDATE 1 <span class="r">· order 1043 → refunded</span></span></div>
+    <div class="lg"><span class="hold">HOLD</span><span class="agent">support-agent</span><span class="q">DELETE FROM orders WHERE id = ?</span></div>
+    <div class="lg"><span class="no">DENY</span><span class="agent">dana@acme.test</span><span class="q">"Deletes need a ticket." <span class="r">· agent told it did not run · row kept</span></span></div>
+    <div class="lg"><span class="no">BLOCK</span><span class="agent">support-agent</span><span class="q">DROP TABLE orders <span class="r">· blocked_operation</span></span></div>
+    <div class="lg"><span class="no">REFUSE</span><span class="agent">support-agent</span><span class="q">connection refused <span class="r">· key revoked in the app</span></span></div>
+    <div class="s-note">From our v0.7.0 end-to-end test run on a synthetic orders database. Each outcome was checked with a direct read of Postgres.</div>
+  </div>
+</section>
+
+<section class="sec" id="how">
+  <div class="sec-head">
+    <div class="no">§1 HOW IT WORKS</div>
+    <h2>Define access once. Let the agent work&nbsp;inside&nbsp;it.</h2>
+    <p>Most of what an agent does should just run. Review is for the exceptions you pick.</p>
+  </div>
+  <div style="margin-top:32px;">
+    <div class="step"><div class="num">01</div><div class="body">
+      <h3>Create the agent in the app</h3>
+      <p>Each agent gets its own key. Set which writes it can make and which ones wait for a reviewer. You can revoke the key at any time.</p>
+    </div></div>
+    <div class="step"><div class="num">02</div><div class="body">
+      <h3>Point the agent at the proxy</h3>
+      <p>The proxy runs next to your database. The agent swaps its connection string for the proxy address and its key. Only the proxy holds the real database password.</p>
+    </div></div>
+    <div class="step"><div class="num">03</div><div class="body">
+      <h3>Permitted work proceeds</h3>
+      <p>Reads and writes your rules allow go straight through. Operations your rules block, like <code>DROP TABLE</code>, never reach Postgres.</p>
+    </div></div>
+    <div class="step"><div class="num">04</div><div class="body">
+      <h3>Selected writes wait for a reviewer</h3>
+      <p>The write is held at the proxy before it reaches Postgres. Approve and it runs. Deny and the agent gets a clear error with your reason.</p>
+    </div></div>
+    <div class="step"><div class="num">05</div><div class="body">
+      <h3>Review the decisions in one place</h3>
+      <p>Every held write shows who approved or denied it and when.</p>
+    </div></div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-head">
+    <div class="no">§2 WHERE IT RUNS</div>
+    <h2>Your database traffic stays in&nbsp;your&nbsp;network.</h2>
+  </div>
+  <div class="arch">
+<pre>
+ <span class="dim">┌ YOUR NETWORK ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  ┐</span>
+ <span class="dim">│</span>                                                                                               <span class="dim">│</span>
+ <span class="dim">│</span>  ┌──────────────┐                  ┌──────────────────────┐                  ┌────────────┐   <span class="dim">│</span>
+ <span class="dim">│</span>  │   AI agent   │  postgres wire   │ <span class="ph">FAULTWALL PROXY</span>      │  postgres wire   │ PostgreSQL │   <span class="dim">│</span>
+ <span class="dim">│</span>  │  (its key)   │ ───────────────► │ checks rules, holds  │ ───────────────► │            │   <span class="dim">│</span>
+ <span class="dim">│</span>  │              │                  │ selected writes      │                  │            │   <span class="dim">│</span>
+ <span class="dim">│</span>  └──────────────┘                  └──────────┬───────────┘                  └────────────┘   <span class="dim">│</span>
+ <span class="dim">│</span>                                               │                                               <span class="dim">│</span>
+ <span class="dim">└─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─</span>│<span class="dim">─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┘</span>
+                                                 │ <span class="ph">outbound HTTPS only</span>
+                                      ┌──────────▼───────────┐
+                                      │ FaultWall app        │  <span class="dim">agents, keys, rules,</span>
+                                      │ (hosted)             │  <span class="dim">approvals, decisions</span>
+                                      └──────────────────────┘
+</pre>
+  <div class="arch-m">
+    <div class="net"><div class="net-k">YOUR NETWORK</div>
+      <div class="bx">AI agent<small>connects with its key</small></div>
+      <div class="ar">│ postgres wire ▼</div>
+      <div class="bx ph">FAULTWALL PROXY<small>checks rules, holds selected writes</small></div>
+      <div class="ar">│ postgres wire ▼</div>
+      <div class="bx">PostgreSQL</div>
+    </div>
+    <div class="ar ph">│ outbound HTTPS only (from the proxy) ▼</div>
+    <div class="bx">FaultWall app (hosted)<small>agents, keys, rules, approvals, decisions</small></div>
+  </div>
+</div>
+  <div class="arch-notes">
+    <div>
+      <div class="k">DATABASE PATH</div>
+      <p>Agents connect to the proxy, and the proxy connects to Postgres. Both connections stay inside your network.</p>
+    </div>
+    <div>
+      <div class="k">CONTROL PATH</div>
+      <p>The proxy calls our app over outbound HTTPS to get rules and send held writes for review. Reviewers see the statement shape, not the values.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="questions">
+  <div class="sec-head">
+    <div class="no">§3 FAIR QUESTIONS</div>
+    <h2>You may not need us. Here's how to tell.</h2>
+  </div>
+  <table class="facts">
+    <tr><td class="k">We can build approval into our own tool layer.</td><td class="v">You can, and some teams already run a shared approval service. FaultWall enforces at the Postgres connection, so you can apply controls without adding approval logic to each agent implementation.</td></tr>
+    <tr><td class="k">Scoped read-only roles already work for us.</td><td class="v">Then keep them. FaultWall becomes relevant when you need controlled writes, reviewable exceptions, or one consistent workflow across agents. <span>Running <code style="font-family:var(--mono);font-size:12.5px;color:var(--phos)">faultwall audit --fix</code> generates the privileges Postgres can enforce natively and lists the ones that still need FaultWall.</span></td></tr>
+    <tr><td class="k">That's another component in production.</td><td class="v">Yes. The proxy becomes part of the database path. So we start in staging and test compatibility, latency, failure behavior and recovery with your workload before you decide anything.</td></tr>
+    <tr><td class="k">Will engineers end up reviewing SQL all day?</td><td class="v">We measure approval volume and turnaround during the evaluation. A lot of repeat requests can mean a rule is too strict. Some sensitive operations should keep requiring review regardless.</td></tr>
+  </table>
+</section>
+
+<section class="sec" id="scope">
+  <div class="sec-head">
+    <div class="no">§4 WHAT'S LIVE</div>
+    <h2>What you can use now, and what we're building with design partners.</h2>
+  </div>
+  <div class="scope">
+    <div class="live">
+      <div class="tag live">LIVE IN v0.7.0</div>
+      <ul>
+        <li><b>Per-agent keys</b>, issued in the app, revocable</li>
+        <li><b>Write rules set in the app</b>: allow, block, or hold for review</li>
+        <li><b>Held writes</b> wait at the proxy until approved or denied</li>
+        <li><b>Decision history</b> with reviewer and outcome</li>
+        <li><b>Destructive operations blocked</b> before Postgres sees them</li>
+        <li><code>faultwall audit --fix</code> shows what each agent's DB user can do and generates native privileges</li>
+      </ul>
+    </div>
+    <div class="next">
+      <div class="tag next">BUILDING WITH DESIGN PARTNERS</div>
+      <ul>
+        <li><b>Shared policy</b> across org, database and agent, with versions and rollback</li>
+        <li><b>Approvals in Slack</b></li>
+        <li><b>Policy preview</b>: what a change would have blocked last week</li>
+        <li><b>Row limits</b> on held writes</li>
+        <li><b>Query risk warnings</b> before an agent query hurts production</li>
+        <li><b>Kernel-level detection</b> of database access that skips the proxy</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="evaluate">
+  <div class="sec-head">
+    <div class="no">§5 EVALUATE</div>
+    <h2>Bring us one database workflow you want to automate.</h2>
+  </div>
+  <div class="eval" style="margin-top:32px; border-top:1px solid var(--line);">
+    <div>
+      <p class="lead">We work with your team to put one Postgres agent workflow under an agreed access policy, evaluate it in staging, and produce the evidence your owner needs to decide on production access.</p>
+      <ol>
+        <li>Pick the workflow your agent isn't allowed to run today.</li>
+        <li>Agree on the access policy and who reviews exceptions.</li>
+        <li>Run it in staging against your workload.</li>
+        <li>Hand your owner the evidence to make the production call.</li>
+      </ol>
+    </div>
+    <div>
+      <div class="k">WE AGREE ON THE MEASURE WITH YOU</div>
+      <ul class="measure">
+        <li>A blocked workflow becomes usable</li>
+        <li>Fewer manual interventions</li>
+        <li>Less time administering access</li>
+        <li>Clearer accountability for agent changes</li>
+      </ul>
+      <p class="fine">More blocked queries isn't the goal. Useful work getting done safely is.</p>
+      <div style="margin-top:24px;"><a class="btn-solid" href="mailto:shreyas@faultwall.com?subject=Evaluate%20one%20agent%20workflow">Evaluate one agent workflow</a></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-grid">
+    <div class="foot-brand"><img src="../logo.png" alt="FaultWall">faultwall</div>
+    <div class="foot-links">
+      <a href="https://github.com/shreyasXV/faultwall">github</a>
+      <a href="https://twitter.com/FaultWall">twitter</a>
+      <a href="mailto:shreyas@faultwall.com">contact</a>
+    </div>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>

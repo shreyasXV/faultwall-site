@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FaultWall: put your agents to work in Postgres, keep control</title>
+<meta name="description" content="Give each AI agent scoped access to Postgres. Permitted work runs. The writes you pick wait for someone on your team.">
+<meta name="robots" content="noindex">
+<style>
+:root{
+  --paper:#f8f7f2; --card:#fffefa; --ink:#222923; --muted:#535a51; --faint:#6f766c;
+  --rule:#dcdfd5; --rule-2:#e9ebe3;
+  --green:#315b40; --green-2:#244731; --green-soft:#e6eee6;
+  --amber:#946410; --amber-soft:#f6eedb;
+  --red:#9e3a2c; --red-soft:#f5e4df;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--paper);scroll-behavior:smooth}
+body{color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible{outline:2px solid var(--green);outline-offset:4px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 clamp(22px,5vw,60px)}
+
+/* header */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:26px 0;border-bottom:1px solid var(--rule)}
+.brand{font-size:22px;font-weight:700;letter-spacing:-1px}
+.hdr nav{display:flex;gap:28px;align-items:center;font-size:13.5px}
+.hdr nav a{color:var(--muted)}
+.hdr nav a:hover{color:var(--ink)}
+.hdr nav .talk{color:var(--ink);border-bottom:1px solid var(--ink);padding:4px 0}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;padding:76px 0 72px}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:24px}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(46px,6.2vw,78px);line-height:1.02;letter-spacing:-.05em}
+h1 .w{display:inline-block}
+h1 em{font-style:normal;color:var(--green);display:block}
+.intro{font-size:18.5px;line-height:1.62;color:var(--muted);max-width:29em;margin-top:26px;text-wrap:pretty}
+.ctas{display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px;margin-top:32px}
+.btn{display:inline-flex;align-items:center;gap:16px;background:var(--green);color:#fff;font-size:14.5px;font-weight:600;padding:16px 22px;border-radius:3px;transition:background .18s}
+.btn:hover{background:var(--green-2)}
+.btn .ar{transition:transform .2s}
+.btn:hover .ar{transform:translateX(4px)}
+.sublink{font-size:14.5px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--ink);padding:3px 0;display:inline-flex;gap:8px}
+.sublink .ar{transition:transform .2s}
+.sublink:hover .ar{transform:translateX(4px)}
+.small{font-size:12.5px;color:var(--faint);margin-top:16px}
+
+/* hero flow */
+.flow{background:var(--card);border:1px solid var(--rule);border-radius:6px;box-shadow:0 1px 0 #fff inset,0 18px 40px -24px rgba(36,55,36,.25);overflow:hidden}
+.flow-top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--rule-2);font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.02em}
+.flow-top .on{display:inline-flex;align-items:center;gap:7px;color:var(--faint)}
+.flow-top .on i{width:6px;height:6px;border-radius:50%;border:1px solid var(--faint);display:inline-block}
+.track{position:relative;height:88px;margin:22px 52px 6px}
+.track .line{position:absolute;left:0;right:0;top:22px;height:1px;background:var(--rule)}
+.node{position:absolute;top:0;transform:translateX(-50%);text-align:center;width:100px;z-index:2}
+.node b{display:block;margin:15px auto 0;width:15px;height:15px;border-radius:50%;background:var(--card);border:1.5px solid var(--ink)}
+.node.px b{width:19px;height:19px;margin-top:13px;background:var(--green);border-color:var(--green)}
+.node span{display:block;font-family:var(--mono);font-size:11.5px;line-height:14px;color:var(--muted);margin-top:12px;white-space:nowrap}
+.node.px span{color:var(--green);margin-top:10px}
+.n1{left:0}
+.n2{left:50%}
+.n3{left:100%}
+.dot{position:absolute;top:18px;left:-4.5px;width:9px;height:9px;border-radius:50%;background:var(--green);opacity:0;z-index:1}
+.ring{position:absolute;left:50%;top:9px;z-index:3;width:27px;height:27px;margin-left:-13.5px;border-radius:50%;border:1.5px solid var(--amber);opacity:0}
+.log{padding:6px 18px 4px;height:292px;overflow:hidden}
+.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:11px 0;border-top:1px solid var(--rule-2);font-family:var(--mono);font-size:12.2px}
+.row:first-child{border-top:0}
+.row .sql{color:var(--ink);min-width:0;line-height:1.5;white-space:nowrap;letter-spacing:-.02em}
+.row .sql.struck{color:var(--faint);text-decoration:line-through}
+.tag{font-size:10.5px;letter-spacing:.06em;font-weight:600;padding:4px 8px;border-radius:3px;white-space:nowrap;min-width:78px;text-align:center;border:1px solid transparent}
+.tag.ap{color:var(--green);background:transparent;border-color:var(--green)}
+.tag.dn{color:var(--red);background:transparent;border-color:var(--red)}
+.tag.ok{color:var(--green);background:var(--green-soft)}
+.tag.hold{color:var(--amber);background:var(--amber-soft)}
+.tag.no{color:var(--red);background:var(--red-soft)}
+.row .why{grid-column:1/-1;font-family:var(--sans);font-size:12px;color:var(--muted);margin-top:-4px}
+.review{margin:0 18px 16px;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:12.5px;opacity:0}
+.review .who{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.review .what{color:var(--ink);font-weight:600}
+.flow-foot{padding:11px 18px;border-top:1px solid var(--rule-2);font-size:11.5px;color:var(--faint)}
+
+/* steps */
+.steps{border-top:1px solid var(--rule);padding:64px 0 70px}
+.sec-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--green);text-transform:uppercase}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(30px,3.6vw,40px);line-height:1.12;letter-spacing:-.035em;margin-top:12px;max-width:20em;text-wrap:balance}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:44px;position:relative}
+.steps-grid .bar{position:absolute;top:0;left:0;height:2px;width:100%;background:var(--green);transform-origin:left center}
+.steps-grid .base{position:absolute;top:0;left:0;right:0;height:2px;background:var(--rule)}
+.step{padding:30px 34px 0 0}
+.step .n{font-family:var(--mono);font-size:12px;color:var(--green)}
+.step h3{font-family:var(--serif);font-weight:400;font-size:24px;letter-spacing:-.02em;margin-top:14px}
+.step p{font-size:15px;line-height:1.65;color:var(--muted);margin-top:10px;max-width:22em;text-wrap:pretty}
+
+/* example */
+.ex{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;border-top:1px solid var(--rule);padding:66px 0}
+.ex-copy p{font-size:15.5px;line-height:1.7;color:var(--muted);margin-top:18px;max-width:24em}
+.ex-copy .sublink{margin-top:26px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px;box-shadow:0 18px 40px -28px rgba(36,55,36,.3)}
+.card-k{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.02em;color:var(--faint);padding-bottom:16px;border-bottom:1px solid var(--rule-2)}
+.done{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:18px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.done span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.req{font-family:var(--mono);font-size:13px;margin-top:12px;color:var(--ink);background:var(--paper);border:1px solid var(--rule-2);border-radius:3px;padding:12px 14px;line-height:1.5}
+.req small{display:block;font-family:var(--sans);font-size:11.5px;color:var(--faint);margin-bottom:4px}
+.state{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 0;border-top:1px solid var(--rule-2);border-bottom:1px solid var(--rule-2);font-size:13.5px}
+.state .lbl{color:var(--muted)}
+.state .val{display:flex;gap:10px;align-items:center;font-family:var(--mono);font-size:13px}
+.val .now{color:var(--ink)}
+.val .arrow{color:var(--faint)}
+.val .next{color:var(--faint)}
+.status{font-size:13.5px;line-height:1.5;color:var(--muted);padding-top:16px}
+.reply{font-family:var(--mono);font-size:11.8px;line-height:1.55;color:var(--muted);margin-top:6px}
+.reply:empty{display:none}
+.acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.acts button{border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:3px;padding:10px 18px;min-height:42px;font-size:13.5px;font-weight:600}
+.acts button:hover{background:var(--ink);color:var(--paper)}
+.acts button.deny{border-color:var(--rule);font-weight:500;color:var(--muted)}
+.acts button.deny:hover{background:var(--paper);color:var(--ink);border-color:var(--ink)}
+.acts button:disabled{opacity:.35;cursor:default;background:transparent;color:var(--ink)}
+.again{border:0;background:none;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:12.5px;margin-top:12px;padding:6px 0}
+[hidden]{display:none!important}
+
+/* closing */
+.close{border-top:1px solid var(--rule);padding:66px 0 72px}
+.close p{font-size:16px;line-height:1.7;color:var(--muted);margin-top:16px;max-width:34em}
+footer{border-top:1px solid var(--rule);padding:22px 0 30px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--faint)}
+footer nav{display:flex;gap:22px}
+footer a:hover{color:var(--ink)}
+
+main p.sec-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--green);text-transform:uppercase;margin:0;max-width:none;line-height:1.4}
+main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5}
+.close{text-align:center}
+.close h2,.close p{margin-left:auto;margin-right:auto}
+.close .ctas{justify-content:center}
+/* motion: hidden only when JS motion is running */
+.mo .rv{opacity:0}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:minmax(0,1fr);gap:44px;padding:52px 0 56px}
+  .ex{grid-template-columns:minmax(0,1fr);gap:34px}
+  .steps-grid{grid-template-columns:1fr}
+  .steps-grid .bar,.steps-grid .base{display:none}
+  .step{padding:26px 0;border-top:1px solid var(--rule)}
+}
+@media(max-width:560px){
+  .hdr nav .hide-s{display:none}
+  .track{margin:20px 40px 4px}
+  .log{padding:4px 14px;height:338px}
+  .row{font-size:11.2px}
+  .row .sql{white-space:normal;overflow-wrap:anywhere;letter-spacing:0}
+  .done span:first-child{white-space:normal}
+  h1{font-size:44px}
+  .review{margin:0 14px 14px}
+  .card{padding:20px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hdr">
+    <a class="brand" href="index.html">faultwall</a>
+    <nav>
+      <a class="hide-s" href="how-it-works.html">How it works</a>
+      <a class="hide-s" href="https://github.com/shreyasXV/faultwall">GitHub</a>
+      <a class="talk" href="mailto:shreyas@faultwall.com">Talk to us</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="kicker rv">Access control for AI agents on Postgres</p>
+        <h1 id="h1"><span class="w">Put</span> <span class="w">your</span> <span class="w">agents</span> <span class="w">to</span> <span class="w">work.</span><em><span class="w">Keep</span> <span class="w">control.</span></em></h1>
+        <p class="intro rv">Give each agent scoped access to your database. Permitted work runs. The writes you pick wait for someone on your team.</p>
+        <div class="ctas rv">
+          <a class="btn" href="mailto:shreyas@faultwall.com?subject=Evaluate%20one%20workflow">Evaluate a workflow with us <span class="ar" aria-hidden="true">&rarr;</span></a>
+          <a class="sublink" href="how-it-works.html">See how it works <span class="ar" aria-hidden="true">&rarr;</span></a>
+        </div>
+        <p class="small rv">One agent workflow, in your staging environment. We set it up with you.</p>
+      </div>
+
+      <div class="flow rv" aria-label="Animated example of FaultWall deciding on an agent's statements. Synthetic data.">
+        <div class="flow-top"><span>support-agent &nbsp;/&nbsp; orders db</span><span class="on"><i></i>example</span></div>
+        <div class="track" aria-hidden="true">
+          <div class="line"></div>
+          <div class="node n1"><b></b><span>agent</span></div>
+          <div class="node px n2"><b></b><span>faultwall</span></div>
+          <div class="node n3"><b></b><span>postgres</span></div>
+          <div class="ring" id="ring"></div>
+          <div class="dot" id="dot"></div>
+        </div>
+        <div class="log" id="log" aria-live="off"></div>
+        <div class="review" id="review"><span><span class="what" id="rv-what">Approved</span> <span class="who" id="rv-who">dana@acme.test</span></span><span class="who" id="rv-note">in the FaultWall app</span></div>
+        <div class="flow-foot">Statements and outcomes from our v0.7.0 test run on a synthetic database.</div>
+      </div>
+    </section>
+
+    <section class="steps">
+      <p class="sec-k rv">In practice</p>
+      <h2 class="rv">Most of what an agent does should just run. You decide the exceptions.</h2>
+      <div class="steps-grid">
+        <div class="base"></div><div class="bar" id="bar"></div>
+        <div class="step rv"><p class="n">01</p><h3>Scope it</h3><p>Each agent gets its own key and its own write rules, set in the FaultWall app.</p></div>
+        <div class="step rv"><p class="n">02</p><h3>Let it work</h3><p>Reads and permitted writes go straight through to Postgres. No agent rewrite.</p></div>
+        <div class="step rv"><p class="n">03</p><h3>Decide the exceptions</h3><p>Writes you selected wait for a reviewer. Blocked operations never reach the database.</p></div>
+      </div>
+    </section>
+
+    <section class="ex" aria-labelledby="ex-t">
+      <div class="ex-copy">
+        <p class="sec-k rv">Try it</p>
+        <h2 id="ex-t" class="rv">Look up the order. Ask before changing it.</h2>
+        <p class="rv">Say your support agent can read orders but needs a yes before it changes one. It does the research on its own. The change waits at FaultWall, before it reaches Postgres.</p>
+        <a class="sublink rv" href="how-it-works.html#decisions">What happens to each statement <span class="ar" aria-hidden="true">&rarr;</span></a>
+      </div>
+      <div class="card rv" aria-label="Interactive example with no real data">
+        <div class="card-k"><span>support-agent &nbsp;/&nbsp; orders db</span><span>example</span></div>
+        <div class="done"><span>SELECT id, status FROM orders WHERE id = ?</span><span class="tag ok">ALLOW</span></div>
+        <div class="req"><small id="rq">support-agent wants to run</small>UPDATE orders SET status = ? WHERE id = ?</div>
+        <div class="state">
+          <span class="lbl">Order 1043 in Postgres</span>
+          <span class="val" id="val"><span class="now" id="now">processing</span><span class="arrow" id="arr">&rarr;</span><span class="next" id="nxt">refunded</span></span>
+        </div>
+        <p class="status" id="st" aria-live="polite">Held at the proxy. Nothing has changed in the database.</p>
+        <p class="reply" id="rp"></p>
+        <div class="acts">
+          <button type="button" id="ap">Approve</button>
+          <button type="button" id="dn" class="deny">Deny</button>
+        </div>
+        <button class="again" id="ag" type="button" hidden>Replay example</button>
+      </div>
+    </section>
+
+    <section class="close">
+      <div>
+        <p class="sec-k rv">Work with us</p>
+        <h2 class="rv">Bring us one workflow.</h2>
+        <p class="rv">Tell us what your agent should be doing that it isn't allowed to do today. We'll put it under limits your team agrees on, run it in staging, and give the owner the evidence to decide on production.</p>
+        <div class="ctas rv">
+          <a class="btn" href="mailto:shreyas@faultwall.com?subject=Evaluate%20one%20workflow">Evaluate a workflow with us <span class="ar" aria-hidden="true">&rarr;</span></a>
+          <a class="sublink" href="how-it-works.html">See how it works <span class="ar" aria-hidden="true">&rarr;</span></a>
+        </div>
+        <p class="small rv">One agent workflow, in your staging environment. We set it up with you.</p>
+    </section>
+  </main>
+
+  <footer>
+    <span>faultwall &nbsp;/&nbsp; built for Postgres</span>
+    <nav><a href="how-it-works.html">How it works</a><a href="https://github.com/shreyasXV/faultwall">GitHub</a><a href="mailto:shreyas@faultwall.com">Contact</a></nav>
+  </footer>
+</div>
+
+<script>
+/* interactive card works with or without the motion library */
+(() => {
+  const ap=document.getElementById('ap'), dn=document.getElementById('dn'), ag=document.getElementById('ag');
+  const st=document.getElementById('st'), rp=document.getElementById('rp');
+  const now=document.getElementById('now'), arr=document.getElementById('arr'), nxt=document.getElementById('nxt');
+  function decide(ok){
+    ap.parentElement.hidden=true; ag.hidden=false; document.getElementById('rq').textContent = ok ? 'support-agent ran, after approval' : 'support-agent asked to run (denied)';
+    if(ok){
+      now.textContent='refunded'; now.style.color='var(--green)'; arr.hidden=true; nxt.hidden=true;
+      st.textContent='Approved. The proxy ran the write, and order 1043 is now refunded.';
+      rp.textContent='agent receives: UPDATE 1';
+    }else{
+      now.style.color='var(--ink)'; arr.hidden=true; nxt.hidden=true;
+      st.textContent='Denied. The write never ran. Order 1043 is unchanged.';
+      rp.textContent='agent receives: held for approval and denied by dana@acme.test: "Needs a ticket." It did not run.';
+    }
+    window.__fwPulse && window.__fwPulse(document.getElementById('val'));
+  }
+  ap.onclick=()=>decide(true); dn.onclick=()=>decide(false);
+  ag.onclick=()=>{ap.parentElement.hidden=false; ag.hidden=true; document.getElementById('rq').textContent='support-agent wants to run'; now.textContent='processing'; now.style.color=''; arr.hidden=false; nxt.hidden=false;
+    st.textContent='Held at the proxy. Nothing has changed in the database.'; rp.textContent=''; ap.focus();};
+})();
+</script>
+
+<script type="module">
+import { animate, inView, stagger } from "https://cdn.jsdelivr.net/npm/motion@11.11.13/+esm";
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const log = $('#log'), dot = $('#dot'), ring = $('#ring'), review = $('#review');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const SEQ = [
+  { sql:'SELECT id, status FROM orders WHERE id IN (?, ?, ?)', kind:'allow', tag:'ALLOW', why:'3 rows returned' },
+  { sql:'UPDATE orders SET status = ? WHERE id = ?', kind:'hold', tag:'HOLD', after:'APPROVED', why:'Waited at the proxy for a reviewer. Then ran: UPDATE 1', who:'dana@acme.test', verdict:'Approved' },
+  { sql:'DROP TABLE orders', kind:'block', tag:'BLOCKED', why:'Never reached Postgres' },
+  { sql:'DELETE FROM orders WHERE id = ?', kind:'deny', tag:'HOLD', after:'DENIED', why:'Denied with a reason: "Deletes need a ticket." Row kept.', who:'dana@acme.test', verdict:'Denied' },
+];
+
+function addRow(s){
+  const r = document.createElement('div'); r.className='row';
+  r.innerHTML = `<span class="sql"></span><span class="tag"></span><span class="why"></span>`;
+  r.querySelector('.sql').textContent = s.sql;
+  log.appendChild(r); return r;
+}
+function setTag(r, text, cls){ const t=r.querySelector('.tag'); t.textContent=text; t.className='tag '+cls; }
+
+const track = () => $('.track').getBoundingClientRect().width;
+const X = f => track() * f;   // dot travel in px (0 = agent, .5 = faultwall, 1 = postgres)
+const COLOR = { allow:'#315b40', hold:'#946410', block:'#9e3a2c', deny:'#9e3a2c' };
+
+async function play(s){
+  const r = addRow(s);
+  const why = r.querySelector('.why'); why.textContent='';
+  await animate(r, { opacity:[0,1], y:[10,0] }, { duration:.45, ease:[.16,1,.3,1] });
+  dot.style.background = COLOR.allow;
+  animate(dot, { opacity:1, x:0 }, { duration:0 });
+  await animate(dot, { x: X(.5) }, { duration:.75, ease:[.45,0,.2,1] });
+  if (s.kind==='allow'){
+    setTag(r,s.tag,'ok'); animate(r.querySelector('.tag'), { scale:[.6,1], opacity:[0,1] }, { type:'spring', stiffness:520, damping:22 });
+    await animate(dot, { x: X(1) }, { duration:.7, ease:[.45,0,.2,1] });
+    why.textContent=s.why; animate(why,{opacity:[0,1]},{duration:.3});
+    await animate(dot, { opacity:0, scale:[1,1.8] }, { duration:.35 }); animate(dot,{scale:1},{duration:0});
+  }
+  if (s.kind==='hold' || s.kind==='deny'){
+    dot.style.background = COLOR.hold; animate(dot,{opacity:0},{duration:.2});
+    setTag(r,'HOLD','hold'); animate(r.querySelector('.tag'), { scale:[.6,1], opacity:[0,1] }, { type:'spring', stiffness:520, damping:22 });
+    why.textContent='Waiting at the proxy. Row unchanged.'; animate(why,{opacity:[0,1]},{duration:.3});
+    const pulse = animate(ring, { opacity:[.9,0], scale:[.7,1.9] }, { duration:1.1, repeat:Infinity, ease:'easeOut' });
+    await sleep(1500);
+    $('#rv-what').textContent = 'Waiting for review'; $('#rv-what').style.color = COLOR.hold; $('#rv-who').textContent = '';
+    await animate(review, { opacity:[0,1], y:[12,0] }, { type:'spring', stiffness:300, damping:26 });
+    await sleep(900);
+    $('#rv-what').textContent = s.verdict; $('#rv-who').textContent = s.who;
+    $('#rv-what').style.color = s.kind==='hold' ? COLOR.allow : COLOR.deny;
+    animate('#rv-what', { opacity:[0,1] }, { duration:.25 });
+    await sleep(600);
+    pulse.stop(); animate(ring,{opacity:0},{duration:.2});
+    if (s.kind==='hold'){
+      setTag(r,s.after,'ap'); why.textContent=s.why; dot.style.background = COLOR.allow; animate(dot,{opacity:1},{duration:.15});
+      animate(r.querySelector('.tag'), { scale:[.6,1] }, { type:'spring', stiffness:520, damping:22 });
+      await animate(dot, { x: X(1) }, { duration:.7, ease:[.45,0,.2,1] });
+      await animate(dot, { opacity:0, scale:[1,1.8] }, { duration:.35 }); animate(dot,{scale:1},{duration:0});
+    } else {
+      setTag(r,s.after,'dn'); why.textContent=s.why; dot.style.background = COLOR.deny; animate(dot,{opacity:1},{duration:.15});
+      animate(r.querySelector('.tag'), { scale:[.6,1] }, { type:'spring', stiffness:520, damping:22 });
+      await animate(dot, { opacity:0, scale:[1,.3] }, { duration:.4 }); animate(dot,{scale:1},{duration:0});
+    }
+    why.textContent=s.why;
+    animate(review, { opacity:0, y:6 }, { duration:.35, delay:.6 });
+  }
+  if (s.kind==='block'){
+    dot.style.background = COLOR.block;
+    setTag(r,s.tag,'no'); animate(r.querySelector('.tag'), { scale:[.6,1], opacity:[0,1] }, { type:'spring', stiffness:520, damping:22 });
+    r.querySelector('.sql').classList.add('struck');
+    await animate(dot, { x:[X(.5), X(.5)-10, X(.5), X(.5)-6, X(.5)] }, { duration:.45 });
+    why.textContent=s.why; animate(why,{opacity:[0,1]},{duration:.3});
+    await animate(dot, { x: X(.32), opacity:0 }, { duration:.5, ease:'easeIn' });
+  }
+  await sleep(900);
+}
+
+async function loop(){
+  while(true){
+    for (const s of SEQ) await play(s);
+    await sleep(2200);
+    await animate(log.children, { opacity:0, y:-6 }, { duration:.4, delay:stagger(.05) });
+    log.innerHTML='';
+  }
+}
+
+function staticFlow(){
+  SEQ.forEach(s=>{ const r=addRow(s); r.querySelector('.why').textContent=s.why;
+    setTag(r, s.after||s.tag, s.kind==='allow'?'ok':s.kind==='hold'?'ap':s.kind==='deny'?'dn':'no');
+    if(s.kind==='block') r.querySelector('.sql').classList.add('struck'); });
+}
+
+window.__fwPulse = el => !reduce && animate(el, { y:[6,0], opacity:[.3,1] }, { type:'spring', stiffness:400, damping:20 });
+
+if (reduce){ staticFlow(); }
+else {
+  document.documentElement.classList.add('mo');
+  // hero entrance
+  animate('.hero .kicker', { opacity:[0,1], y:[8,0] }, { duration:.6 });
+  animate('#h1 .w', { opacity:[0,1], y:[28,0], filter:['blur(6px)','blur(0px)'] }, { duration:.8, delay:stagger(.07,{startDelay:.1}), ease:[.16,1,.3,1] });
+  animate('.hero .intro, .hero .ctas, .hero .small', { opacity:[0,1], y:[14,0] }, { duration:.7, delay:stagger(.1,{startDelay:.6}), ease:[.16,1,.3,1] });
+  animate('.flow', { opacity:[0,1], y:[24,0], scale:[.98,1] }, { duration:.9, delay:.45, ease:[.16,1,.3,1] }).then(()=>{ sleep(300).then(loop); });
+  // scroll reveals
+  document.querySelectorAll('main section:not(.hero)').forEach(sec=>{
+    inView(sec, () => {
+      animate(sec.querySelectorAll('.rv'), { opacity:[0,1], y:[22,0] }, { duration:.75, delay:stagger(.09), ease:[.16,1,.3,1] });
+      const bar = sec.querySelector('#bar');
+      if (bar) animate(bar, { scaleX:[0,1] }, { duration:1.4, delay:.2, ease:[.65,0,.35,1] });
+    }, { amount:.25 });
+  });
+}
+</script>
+</body>
+</html>

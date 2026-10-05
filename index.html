@@ -164,7 +164,7 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
   .card{padding:20px}
 }
 /* trusted-by marquee */
-.trust{padding:32px 0;border-top:1px solid var(--rule);margin-top:8px}
+.trust{padding:32px 0 40px;border-top:1px solid var(--rule)}
 .trust-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:24px}
 .mq{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
 .mq-track{display:flex;width:max-content;will-change:transform}
@@ -220,32 +220,6 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
       </div>
     </section>
 
-    <section class="trust" aria-label="Trusted by engineers at">
-      <p class="trust-k">Trusted by engineers at</p>
-      <div class="mq" id="mq"><div class="mq-track" id="mq-track">
-        <div class="mq-set">
-          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="0"><img src="/logos/blinka.svg" alt="Blinka"></a>
-          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="0"><img src="/logos/noomshot.svg" alt="Noomshot"></a>
-          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="0"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
-        </div>
-        <div class="mq-set" aria-hidden="true">
-          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
-          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
-          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
-        </div>
-        <div class="mq-set" aria-hidden="true">
-          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
-          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
-          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
-        </div>
-        <div class="mq-set" aria-hidden="true">
-          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
-          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
-          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
-        </div>
-      </div></div>
-    </section>
-
     <section class="steps">
       <p class="sec-k rv">In practice</p>
       <h2 class="rv">Most of what an agent does should just run. You decide the exceptions.</h2>
@@ -292,6 +266,33 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
           <a class="sublink" href="/how-it-works.html">See how it works <span class="ar" aria-hidden="true">&rarr;</span></a>
         </div>
         <p class="small rv">One agent workflow, in your staging environment. We set it up with you.</p>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Trusted by engineers at">
+      <p class="trust-k">Trusted by engineers at</p>
+      <div class="mq" id="mq"><div class="mq-track" id="mq-track">
+        <div class="mq-set">
+          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="0"><img src="/logos/blinka.svg" alt="Blinka"></a>
+          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="0"><img src="/logos/noomshot.svg" alt="Noomshot"></a>
+          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="0"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
+        </div>
+        <div class="mq-set" aria-hidden="true">
+          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
+          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
+          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
+        </div>
+        <div class="mq-set" aria-hidden="true">
+          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
+          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
+          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
+        </div>
+        <div class="mq-set" aria-hidden="true">
+          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
+          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
+          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
+        </div>
+      </div></div>
     </section>
   </main>
 

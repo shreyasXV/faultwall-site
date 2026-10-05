@@ -2,572 +2,401 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FaultWall — Trust &amp; Observability Layer for PostgreSQL</title>
-<meta name="description" content="FaultWall is the trust layer between AI agents and your database. It sees every query an agent runs, knows which agent ran it, and stops the ones that shouldn't execute.">
-<meta property="og:title" content="FaultWall — Trust &amp; Observability Layer for PostgreSQL">
-<meta property="og:description" content="Trust your AI agents with production. Inline SQL enforcement, agent identity, sub-3ms overhead.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FaultWall: put your agents to work in Postgres, keep control</title>
+<meta name="description" content="Give each AI agent scoped access to Postgres. Permitted work runs. The writes you pick wait for someone on your team.">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://faultwall.com/">
+<meta property="og:title" content="FaultWall: put your agents to work in Postgres, keep control">
+<meta property="og:description" content="Give each AI agent scoped access to Postgres. Permitted work runs. The writes you pick wait for someone on your team.">
+<meta property="og:url" content="https://faultwall.com/">
 <meta property="og:image" content="https://faultwall.com/og-breach.png">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0c0e0c;
-  --grid: rgba(140,180,140,0.05);
-  --line: rgba(190,220,190,0.14);
-  --text: #dce5dc;
-  --text-2: rgba(220,229,220,0.58);
-  --text-3: rgba(220,229,220,0.32);
-  --phos: #4ae56a;
-  --phos-dim: rgba(74,229,106,0.12);
-  --alarm: #ff4b4b;
-  --warn: #e5c84a;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', sans-serif;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+:root{
+  --paper:#f8f7f2; --card:#fffefa; --ink:#222923; --muted:#535a51; --faint:#6f766c;
+  --rule:#dcdfd5; --rule-2:#e9ebe3;
+  --green:#315b40; --green-2:#244731; --green-soft:#e6eee6;
+  --amber:#946410; --amber-soft:#f6eedb;
+  --red:#9e3a2c; --red-soft:#f5e4df;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior:smooth; }
-body {
-  font-family:var(--mono); background:var(--bg); color:var(--text);
-  -webkit-font-smoothing:antialiased; line-height:1.6;
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size:32px 32px;
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--paper);scroll-behavior:smooth}
+body{color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible{outline:2px solid var(--green);outline-offset:4px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 clamp(22px,5vw,60px)}
+
+/* header */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:26px 0;border-bottom:1px solid var(--rule)}
+.brand{font-size:22px;font-weight:700;letter-spacing:-1px}
+.hdr nav{display:flex;gap:28px;align-items:center;font-size:13.5px}
+.hdr nav a{color:var(--muted)}
+.hdr nav a:hover{color:var(--ink)}
+.hdr nav .talk{color:var(--ink);border-bottom:1px solid var(--ink);padding:4px 0}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;padding:76px 0 72px}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:24px}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(46px,6.2vw,78px);line-height:1.02;letter-spacing:-.05em}
+h1 .w{display:inline-block}
+h1 em{font-style:normal;color:var(--green);display:block}
+.intro{font-size:18.5px;line-height:1.62;color:var(--muted);max-width:29em;margin-top:26px;text-wrap:pretty}
+.ctas{display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px;margin-top:32px}
+.btn{display:inline-flex;align-items:center;gap:16px;background:var(--green);color:#fff;font-size:14.5px;font-weight:600;padding:16px 22px;border-radius:3px;transition:background .18s}
+.btn:hover{background:var(--green-2)}
+.btn .ar{transition:transform .2s}
+.btn:hover .ar{transform:translateX(4px)}
+.sublink{font-size:14.5px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--ink);padding:3px 0;display:inline-flex;gap:8px}
+.sublink .ar{transition:transform .2s}
+.sublink:hover .ar{transform:translateX(4px)}
+.small{font-size:12.5px;color:var(--faint);margin-top:16px}
+
+/* hero flow */
+.flow{background:var(--card);border:1px solid var(--rule);border-radius:6px;box-shadow:0 1px 0 #fff inset,0 18px 40px -24px rgba(36,55,36,.25);overflow:hidden}
+.flow-top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--rule-2);font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.02em}
+.flow-top .on{display:inline-flex;align-items:center;gap:7px;color:var(--faint)}
+.flow-top .on i{width:6px;height:6px;border-radius:50%;border:1px solid var(--faint);display:inline-block}
+.track{position:relative;height:88px;margin:22px 52px 6px}
+.track .line{position:absolute;left:0;right:0;top:22px;height:1px;background:var(--rule)}
+.node{position:absolute;top:0;transform:translateX(-50%);text-align:center;width:100px;z-index:2}
+.node b{display:block;margin:15px auto 0;width:15px;height:15px;border-radius:50%;background:var(--card);border:1.5px solid var(--ink)}
+.node.px b{width:19px;height:19px;margin-top:13px;background:var(--green);border-color:var(--green)}
+.node span{display:block;font-family:var(--mono);font-size:11.5px;line-height:14px;color:var(--muted);margin-top:12px;white-space:nowrap}
+.node.px span{color:var(--green);margin-top:10px}
+.n1{left:0}
+.n2{left:50%}
+.n3{left:100%}
+.dot{position:absolute;top:18px;left:-4.5px;width:9px;height:9px;border-radius:50%;background:var(--green);opacity:0;z-index:1}
+.ring{position:absolute;left:50%;top:9px;z-index:3;width:27px;height:27px;margin-left:-13.5px;border-radius:50%;border:1.5px solid var(--amber);opacity:0}
+.log{padding:6px 18px 4px;height:292px;overflow:hidden}
+.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:11px 0;border-top:1px solid var(--rule-2);font-family:var(--mono);font-size:12.2px}
+.row:first-child{border-top:0}
+.row .sql{color:var(--ink);min-width:0;line-height:1.5;white-space:nowrap;letter-spacing:-.02em}
+.row .sql.struck{color:var(--faint);text-decoration:line-through}
+.tag{font-size:10.5px;letter-spacing:.06em;font-weight:600;padding:4px 8px;border-radius:3px;white-space:nowrap;min-width:78px;text-align:center;border:1px solid transparent}
+.tag.ap{color:var(--green);background:transparent;border-color:var(--green)}
+.tag.dn{color:var(--red);background:transparent;border-color:var(--red)}
+.tag.ok{color:var(--green);background:var(--green-soft)}
+.tag.hold{color:var(--amber);background:var(--amber-soft)}
+.tag.no{color:var(--red);background:var(--red-soft)}
+.row .why{grid-column:1/-1;font-family:var(--sans);font-size:12px;color:var(--muted);margin-top:-4px}
+.review{margin:0 18px 16px;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:12.5px;opacity:0}
+.review .who{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.review .what{color:var(--ink);font-weight:600}
+.flow-foot{padding:11px 18px;border-top:1px solid var(--rule-2);font-size:11.5px;color:var(--faint)}
+
+/* steps */
+.steps{border-top:1px solid var(--rule);padding:64px 0 70px}
+.sec-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--green);text-transform:uppercase}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(30px,3.6vw,40px);line-height:1.12;letter-spacing:-.035em;margin-top:12px;max-width:20em;text-wrap:balance}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:44px;position:relative}
+.steps-grid .bar{position:absolute;top:0;left:0;height:2px;width:100%;background:var(--green);transform-origin:left center}
+.steps-grid .base{position:absolute;top:0;left:0;right:0;height:2px;background:var(--rule)}
+.step{padding:30px 34px 0 0}
+.step .n{font-family:var(--mono);font-size:12px;color:var(--green)}
+.step h3{font-family:var(--serif);font-weight:400;font-size:24px;letter-spacing:-.02em;margin-top:14px}
+.step p{font-size:15px;line-height:1.65;color:var(--muted);margin-top:10px;max-width:22em;text-wrap:pretty}
+
+/* example */
+.ex{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;border-top:1px solid var(--rule);padding:66px 0}
+.ex-copy p{font-size:15.5px;line-height:1.7;color:var(--muted);margin-top:18px;max-width:24em}
+.ex-copy .sublink{margin-top:26px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px;box-shadow:0 18px 40px -28px rgba(36,55,36,.3)}
+.card-k{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.02em;color:var(--faint);padding-bottom:16px;border-bottom:1px solid var(--rule-2)}
+.done{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:18px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.done span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.req{font-family:var(--mono);font-size:13px;margin-top:12px;color:var(--ink);background:var(--paper);border:1px solid var(--rule-2);border-radius:3px;padding:12px 14px;line-height:1.5}
+.req small{display:block;font-family:var(--sans);font-size:11.5px;color:var(--faint);margin-bottom:4px}
+.state{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 0;border-top:1px solid var(--rule-2);border-bottom:1px solid var(--rule-2);font-size:13.5px}
+.state .lbl{color:var(--muted)}
+.state .val{display:flex;gap:10px;align-items:center;font-family:var(--mono);font-size:13px}
+.val .now{color:var(--ink)}
+.val .arrow{color:var(--faint)}
+.val .next{color:var(--faint)}
+.status{font-size:13.5px;line-height:1.5;color:var(--muted);padding-top:16px}
+.reply{font-family:var(--mono);font-size:11.8px;line-height:1.55;color:var(--muted);margin-top:6px}
+.reply:empty{display:none}
+.acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.acts button{border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:3px;padding:10px 18px;min-height:42px;font-size:13.5px;font-weight:600}
+.acts button:hover{background:var(--ink);color:var(--paper)}
+.acts button.deny{border-color:var(--rule);font-weight:500;color:var(--muted)}
+.acts button.deny:hover{background:var(--paper);color:var(--ink);border-color:var(--ink)}
+.acts button:disabled{opacity:.35;cursor:default;background:transparent;color:var(--ink)}
+.again{border:0;background:none;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:12.5px;margin-top:12px;padding:6px 0}
+[hidden]{display:none!important}
+
+/* closing */
+.close{border-top:1px solid var(--rule);padding:66px 0 72px}
+.close p{font-size:16px;line-height:1.7;color:var(--muted);margin-top:16px;max-width:34em}
+footer{border-top:1px solid var(--rule);padding:22px 0 30px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--faint)}
+footer nav{display:flex;gap:22px}
+footer a:hover{color:var(--ink)}
+
+main p.sec-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--green);text-transform:uppercase;margin:0;max-width:none;line-height:1.4}
+main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5}
+.close{text-align:center}
+.close h2,.close p{margin-left:auto;margin-right:auto}
+.close .ctas{justify-content:center}
+/* motion: hidden only when JS motion is running */
+.mo .rv{opacity:0}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:minmax(0,1fr);gap:44px;padding:52px 0 56px}
+  .ex{grid-template-columns:minmax(0,1fr);gap:34px}
+  .steps-grid{grid-template-columns:1fr}
+  .steps-grid .bar,.steps-grid .base{display:none}
+  .step{padding:26px 0;border-top:1px solid var(--rule)}
 }
-::selection { background:var(--phos); color:var(--bg); }
-a { color:inherit; text-decoration:none; }
-
-.frame { max-width:1080px; margin:0 auto; border-left:1px solid var(--line); border-right:1px solid var(--line); background:rgba(12,14,12,0.55); }
-
-/* ── Nav ── */
-nav {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:14px 28px; border-bottom:1px solid var(--line);
-  font-size:13px; position:sticky; top:0; background:rgba(12,14,12,0.92); backdrop-filter:blur(8px); z-index:50;
+@media(max-width:560px){
+  .hdr nav .hide-s{display:none}
+  .track{margin:20px 40px 4px}
+  .log{padding:4px 14px;height:338px}
+  .row{font-size:11.2px}
+  .row .sql{white-space:normal;overflow-wrap:anywhere;letter-spacing:0}
+  .done span:first-child{white-space:normal}
+  h1{font-size:44px}
+  .review{margin:0 14px 14px}
+  .card{padding:20px}
 }
-.brand { display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:0.02em; font-size:14px; }
-.brand img { height:24px; width:auto; display:block; }
-.nav-r { display:flex; gap:24px; color:var(--text-2); font-size:12.5px; }
-.nav-r a:hover { color:var(--phos); }
-
-/* ── Hero ── */
-.hero { padding:72px 28px 56px; border-bottom:1px solid var(--line); }
-.man-line { font-size:12.5px; color:var(--text-3); margin-bottom:36px; }
-.man-line b { color:var(--text-2); font-weight:500; }
-h1 {
-  font-family:var(--sans);
-  font-size:clamp(36px, 4.8vw, 58px);
-  font-weight:700; letter-spacing:-0.03em; line-height:1.08;
-  max-width:22ch; text-wrap:balance; margin-bottom:20px;
-}
-h1 .ph { color:var(--phos); }
-.hero-sub {
-  font-family:var(--sans); font-size:16.5px; color:var(--text-2);
-  max-width:58ch; line-height:1.7; margin-bottom:14px;
-}
-.hero-sub b { color:var(--text); font-weight:600; }
-.hero-hook { font-family:var(--sans); font-size:14.5px; color:var(--text-3); max-width:58ch; margin-bottom:36px; line-height:1.65; }
-.prompt-row { display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; }
-.cmd-box {
-  display:flex; flex-direction:column; justify-content:center; gap:4px;
-  border:1px solid var(--line); background:rgba(0,0,0,0.35);
-  padding:12px 18px; font-size:13px;
-}
-.cmd-box .row { display:flex; gap:10px; align-items:center; }
-.cmd-box .dollar { color:var(--phos); }
-.cmd-box .tabs { display:flex; gap:2px; margin-bottom:8px; }
-.cmd-box .tab {
-  font-size:11px; color:var(--text-3); padding:3px 12px; cursor:pointer;
-  border:1px solid transparent; transition:all .18s var(--ease); user-select:none;
-}
-.cmd-box .tab:hover { color:var(--text-2); }
-.cmd-box .tab.on { color:var(--phos); border-color:var(--line); background:rgba(74,229,106,0.06); }
-.btn-solid {
-  display:flex; align-items:center;
-  background:var(--phos); color:var(--bg); font-weight:600; font-size:14px;
-  padding:13px 24px; border:1px solid var(--phos);
-  transition:all .2s var(--ease);
-}
-.btn-solid:hover { background:transparent; color:var(--phos); }
-.btn-hollow {
-  display:flex; align-items:center;
-  border:1px solid var(--line); color:var(--text-2); font-size:14px; padding:13px 24px;
-  transition:all .2s var(--ease);
-}
-.btn-hollow:hover { border-color:var(--text-2); color:var(--text); }
-
-/* ── Stats strip ── */
-.stats { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--line); }
-.stat { padding:26px 28px; border-right:1px solid var(--line); }
-.stat:last-child { border-right:none; }
-.stat .n { font-family:var(--sans); font-size:26px; font-weight:700; letter-spacing:-0.02em; color:var(--phos); }
-.stat .l { font-size:12px; color:var(--text-3); margin-top:4px; line-height:1.5; }
-
-/* ── Session ── */
-.session { border-bottom:1px solid var(--line); }
-.session-head {
-  display:flex; justify-content:space-between; padding:14px 28px;
-  border-bottom:1px solid var(--line); font-size:12px; color:var(--text-3);
-}
-.session-head .live { color:var(--phos); }
-.session-head .live::before { content:'● '; animation:blink 2s steps(1) infinite; }
-@keyframes blink { 50% { opacity:0.3; } }
-.session-body { padding:26px 28px; font-size:13px; line-height:2.1; overflow-x:auto; }
-.lg { white-space:nowrap; }
-.lg .ok { color:var(--phos); }
-.lg .no { color:var(--alarm); }
-.lg .agent { color:var(--text-2); }
-.lg .reason { color:var(--text-3); }
-.lg .q { color:var(--text); }
-.s-note { color:var(--text-3); font-size:12px; margin-top:14px; }
-.s-note em { color:var(--phos); font-style:normal; }
-
-/* ── Section scaffolding ── */
-.sec { border-bottom:1px solid var(--line); }
-.sec-head { padding:56px 28px 8px; }
-.sec-head .no { color:var(--phos); font-size:12px; letter-spacing:0.1em; }
-h2 { font-family:var(--sans); font-size:clamp(24px,3vw,34px); font-weight:700; letter-spacing:-0.025em; margin-top:8px; }
-.sec-head p { font-family:var(--sans); font-size:14.5px; color:var(--text-3); margin-top:10px; max-width:60ch; }
-
-/* ── Fact table ── */
-table.facts { width:100%; border-collapse:collapse; margin-top:32px; }
-table.facts tr { border-top:1px solid var(--line); }
-table.facts tr:hover td { background:var(--phos-dim); }
-table.facts td { padding:18px 28px; vertical-align:top; font-size:13.5px; }
-table.facts td.k { width:230px; color:var(--phos); font-size:12.5px; letter-spacing:0.04em; }
-table.facts td.v { color:var(--text-2); font-family:var(--sans); font-size:14.5px; line-height:1.65; }
-table.facts td.v b { color:var(--text); font-weight:600; }
-table.facts td.v code { font-family:var(--mono); font-size:12.5px; color:var(--phos); background:rgba(74,229,106,0.08); padding:1px 6px; }
-
-/* ── Policy example ── */
-.policy-strip { display:grid; grid-template-columns:1fr 1fr; }
-.policy-copy { padding:36px 28px; border-right:1px solid var(--line); }
-.policy-copy h3 { font-family:var(--sans); font-size:19px; font-weight:700; margin-bottom:10px; }
-.policy-copy p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.65; }
-.policy-code { padding:36px 28px; font-size:12.5px; line-height:2; }
-.policy-code .k { color:var(--phos); }
-.policy-code .ok { color:var(--phos); }
-.policy-code .bad { color:var(--alarm); }
-.policy-code .c { color:var(--text-3); }
-
-/* ── Dashboard ── */
-.dash { padding:36px 28px 56px; }
-.dash img { width:100%; display:block; border:1px solid var(--line); }
-.dash .cap { font-size:12px; color:var(--text-3); margin-top:10px; }
-
-/* ── Compat table ── */
-table.compat { width:100%; border-collapse:collapse; margin-top:32px; }
-table.compat tr { border-top:1px solid var(--line); }
-table.compat td { padding:14px 28px; font-size:13px; }
-table.compat td.st { width:90px; }
-table.compat td.st.g { color:var(--phos); }
-table.compat td.st.y { color:var(--warn); }
-table.compat td.name { color:var(--text); font-family:var(--sans); font-size:14px; font-weight:600; width:280px; }
-table.compat td.sub { color:var(--text-3); font-family:var(--sans); font-size:13px; }
-table.compat td.sub a { color:var(--text-2); border-bottom:1px solid var(--line); }
-table.compat td.sub a:hover { color:var(--phos); border-color:var(--phos); }
-.compat-foot { padding:18px 28px 48px; font-size:12px; color:var(--text-3); font-family:var(--sans); line-height:1.7; }
-.compat-foot b { color:var(--text-2); }
-.compat-foot a { color:var(--text-2); border-bottom:1px solid var(--line); }
-.compat-foot a:hover { color:var(--phos); border-color:var(--phos); }
-
-/* ── Steps ── */
-.steps { counter-reset:step; }
-.step { display:grid; grid-template-columns:64px 1fr; border-top:1px solid var(--line); }
-.step .num { padding:26px 0 26px 28px; color:var(--phos); font-size:13px; }
-.step .body { padding:26px 28px 26px 0; }
-.step h3 { font-family:var(--sans); font-size:16px; font-weight:700; margin-bottom:6px; }
-.step p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.65; }
-.step code {
-  display:block; margin-top:10px; padding:10px 14px; border:1px solid var(--line);
-  background:rgba(0,0,0,0.35); font-size:12px; color:var(--text-2); overflow-x:auto; white-space:pre;
-}
-
-/* ── Architecture ── */
-.arch { padding:36px 28px 56px; font-size:13px; line-height:1.9; overflow-x:auto; }
-.arch pre { font-family:var(--mono); color:var(--text-2); white-space:pre; }
-.arch .ph { color:var(--phos); }
-.arch .dim { color:var(--text-3); }
-
-/* ── Modes ── */
-.modes { display:grid; grid-template-columns:1fr 1fr; }
-.mode { padding:36px 28px; }
-.mode:first-child { border-right:1px solid var(--line); }
-.mode .tag { font-size:11px; letter-spacing:0.1em; color:var(--phos); margin-bottom:12px; }
-.mode .tag.dim { color:var(--text-3); }
-.mode h3 { font-family:var(--sans); font-size:19px; font-weight:700; margin-bottom:10px; }
-.mode p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.65; margin-bottom:16px; }
-.mode ul { list-style:none; margin-bottom:16px; }
-.mode li { font-family:var(--sans); font-size:13.5px; color:var(--text-2); padding:3px 0; }
-.mode li::before { content:'+ '; color:var(--phos); font-family:var(--mono); }
-.mode .run { border:1px solid var(--line); background:rgba(0,0,0,0.35); padding:12px 16px; font-size:11.5px; color:var(--text-2); overflow-x:auto; white-space:pre; line-height:1.8; }
-.mode .run .c { color:var(--text-3); }
-
-/* ── Tuning / enterprise ── */
-.duo { display:grid; grid-template-columns:1fr 1fr; }
-.duo > div { padding:36px 28px; }
-.duo > div:first-child { border-right:1px solid var(--line); }
-.duo h3 { font-family:var(--sans); font-size:17px; font-weight:700; margin-bottom:10px; }
-.duo p { font-family:var(--sans); font-size:14px; color:var(--text-2); line-height:1.7; }
-.duo .fine { font-size:12.5px; color:var(--text-3); margin-top:10px; }
-.duo .flow { margin-top:16px; font-size:13px; color:var(--text-3); }
-.duo .flow b { color:var(--phos); font-weight:600; }
-.duo a.mailto { display:inline-block; margin-top:16px; font-size:13px; color:var(--phos); border-bottom:1px solid var(--phos); padding-bottom:1px; }
-
-/* ── Pricing ── */
-.pricing { display:grid; grid-template-columns:1fr 1fr; }
-.price { padding:36px 28px; }
-.price:first-child { border-right:1px solid var(--line); }
-.price .name { font-size:12px; letter-spacing:0.1em; color:var(--text-3); }
-.price.reco .name { color:var(--phos); }
-.price .amt { font-family:var(--sans); font-size:40px; font-weight:700; letter-spacing:-0.02em; margin:10px 0 4px; }
-.price .amt span { font-size:15px; color:var(--text-3); font-weight:400; }
-.price .tag { font-family:var(--sans); font-size:13.5px; color:var(--text-2); margin-bottom:18px; }
-.price ul { list-style:none; margin-bottom:24px; }
-.price li { font-family:var(--sans); font-size:13.5px; color:var(--text-2); padding:4px 0; }
-.price li::before { content:'+ '; color:var(--phos); font-family:var(--mono); }
-.price-foot { padding:0 28px 40px; font-size:12.5px; color:var(--text-3); font-family:var(--sans); }
-
-/* ── CTA ── */
-.cta { padding:72px 28px; text-align:left; }
-.cta h2 { max-width:28ch; }
-.cta p { font-family:var(--sans); font-size:14.5px; color:var(--text-2); margin:14px 0 28px; max-width:56ch; }
-.cta-row { display:flex; gap:12px; flex-wrap:wrap; }
-
-/* ── Footer ── */
-footer { padding:28px; font-size:12px; color:var(--text-3); }
-.foot-grid { display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:20px; }
-.foot-brand { display:flex; align-items:center; gap:8px; color:var(--text-2); font-size:13px; font-weight:600; }
-.foot-brand img { height:18px; }
-.foot-links { display:flex; gap:22px; }
-.foot-links a:hover { color:var(--phos); }
-.foot-bottom { border-top:1px solid var(--line); padding-top:16px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-.foot-bottom a { color:var(--text-2); }
-.foot-bottom a:hover { color:var(--phos); }
-
-@media (max-width:860px) {
-  .frame { border:none; }
-  .stats { grid-template-columns:1fr 1fr; }
-  .stat:nth-child(2) { border-right:none; }
-  .stat:nth-child(1), .stat:nth-child(2) { border-bottom:1px solid var(--line); }
-  table.facts td.k { width:auto; display:block; padding-bottom:0; }
-  table.facts td.v { display:block; padding-top:6px; }
-  .nav-r { display:none; }
-  .modes, .duo, .pricing, .policy-strip { grid-template-columns:1fr; }
-  .mode:first-child, .duo > div:first-child, .price:first-child, .policy-copy { border-right:none; border-bottom:1px solid var(--line); }
-  table.compat td.name { width:auto; }
-}
-@media (prefers-reduced-motion: reduce) { .session-head .live::before { animation:none; } }
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<div class="frame">
+<div class="wrap">
+  <header class="hdr">
+    <a class="brand" href="/">faultwall</a>
+    <nav>
+      <a class="hide-s" href="/how-it-works.html">How it works</a>
+      <a class="hide-s" href="https://github.com/shreyasXV/faultwall">GitHub</a>
+      <a class="talk" href="mailto:shreyas@faultwall.com">Talk to us</a>
+    </nav>
+  </header>
 
-<nav>
-  <a class="brand" href="/"><img src="logo.png" alt="FaultWall">faultwall</a>
-  <div class="nav-r">
-    <a href="#mechanism">how it works</a>
-    <a href="#compatibility">compatibility</a>
-    <a href="#pricing">pricing</a>
-    <a href="https://github.com/shreyasXV/faultwall">github</a>
-    <a href="https://app.faultwall.com">dashboard</a>
-  </div>
-</nav>
-
-<section class="hero">
-  <div class="man-line"><b>FAULTWALL</b> — trust &amp; observability layer for AI agents on PostgreSQL — <b>Go 1.21+ · Postgres 14+</b></div>
-  <h1>Trust your AI agents with <span class="ph">production.</span></h1>
-  <p class="hero-sub"><b>Your AI agent has your database password.</b> A prompt injection hides a DROP TABLE in a customer comment — valid connection, valid credentials, the WAF sees nothing. <b>FaultWall parses the SQL before it reaches PostgreSQL and blocks it.</b></p>
-  <p class="hero-hook">Watches every query your agents run. Stops the dangerous ones, flags the wasteful ones. Agents connect to port 5433 instead of 5432 — that's the only change.</p>
-  <div class="prompt-row">
-    <div class="cmd-box">
-      <div class="tabs">
-        <span class="tab on" data-cmd="brew install shreyasXV/tap/faultwall">brew</span>
-        <span class="tab" data-cmd="curl -fsSL https://raw.githubusercontent.com/shreyasXV/faultwall/main/install.sh | bash">curl</span>
-        <span class="tab" data-cmd="docker pull ghcr.io/shreyasxv/faultwall:latest">docker</span>
-        <span class="tab" data-cmd="go install github.com/shreyasXV/faultwall@latest">go</span>
+  <main>
+    <section class="hero">
+      <div>
+        <p class="kicker rv">Access control for AI agents on Postgres</p>
+        <h1 id="h1"><span class="w">Put</span> <span class="w">your</span> <span class="w">agents</span> <span class="w">to</span> <span class="w">work.</span><em><span class="w">Keep</span> <span class="w">control.</span></em></h1>
+        <p class="intro rv">Give each agent scoped access to your database. Permitted work runs. The writes you pick wait for someone on your team.</p>
+        <div class="ctas rv">
+          <a class="btn" href="mailto:shreyas@faultwall.com?subject=Evaluate%20one%20workflow">Evaluate a workflow with us <span class="ar" aria-hidden="true">&rarr;</span></a>
+          <a class="sublink" href="/how-it-works.html">See how it works <span class="ar" aria-hidden="true">&rarr;</span></a>
+        </div>
+        <p class="small rv">One agent workflow, in your staging environment. We set it up with you.</p>
       </div>
-      <div class="row"><span class="dollar">$</span> <span id="cmdText">brew install shreyasXV/tap/faultwall</span></div>
-    </div>
-    <a class="btn-solid" href="https://github.com/shreyasXV/faultwall#quick-start-5-minutes">Quick start — 5 min</a>
-    <a class="btn-hollow" href="https://github.com/shreyasXV/faultwall">github ↗</a>
-  </div>
-</section>
 
-<section class="stats">
-  <div class="stat"><div class="n">Every</div><div class="l">rogue query blocked before it runs</div></div>
-  <div class="stat"><div class="n">+0.14ms</div><div class="l">median added per query — your DB won't feel it</div></div>
-  <div class="stat"><div class="n">0</div><div class="l">changes to your agents or schema</div></div>
-  <div class="stat"><div class="n">5 min</div><div class="l">from install to first blocked query</div></div>
-</section>
-
-<section class="session">
-  <div class="session-head">
-    <span>faultwall --proxy --listen :5433 --upstream localhost:5432</span>
-    <span class="live">POLICY_ENFORCEMENT=enforce</span>
-  </div>
-  <div class="session-body">
-    <div class="lg"><span class="reason">connect</span>  <span class="agent">agent=cursor-ai/summarize-feedback</span></div>
-    <div class="lg"><span class="ok">ALLOW</span>  <span class="agent">cursor-ai/summarize-feedback</span>  <span class="q">SELECT * FROM feedback LIMIT 100;</span></div>
-    <div class="lg"><span class="no">BLOCK</span>  <span class="agent">cursor-ai/summarize-feedback</span>  <span class="q">DROP TABLE users;</span>  <span class="reason">blocked_operation</span></div>
-    <div class="lg"><span class="no">BLOCK</span>  <span class="agent">rogue-bot/steal</span>               <span class="q">SELECT * FROM users;</span>  <span class="reason">agent_not_in_policy</span></div>
-    <div class="lg"><span class="no">BLOCK</span>  <span class="agent">cursor-ai/summarize-feedback</span>  <span class="q">SELECT pg_read_file('/etc/passwd');</span>  <span class="reason">blocked_function</span></div>
-    <div class="s-note">└─ blocked queries <em>never reach PostgreSQL</em> · parsed with the real PostgreSQL C parser (pg_query_go) · sub-3ms overhead</div>
-  </div>
-</section>
-
-<section class="sec" id="mechanism">
-  <div class="sec-head">
-    <div class="no">§1 — MECHANISM</div>
-    <h2>No SDK. No code changes. No schema changes.</h2>
-  </div>
-  <table class="facts">
-    <tr><td class="k">how it sits</td><td class="v"><b>Inline L7 proxy.</b> Agents connect to :5433, FaultWall parses every statement — Simple and Extended Query Protocol — and only allowed queries reach :5432. Works with psql, psycopg2, pgx, SQLAlchemy, JDBC.</td></tr>
-    <tr><td class="k">who ran what</td><td class="v">Agents identify via <code>application_name</code>: <code>agent:cursor-ai:mission:summarize</code>. Every query attributed to an agent and a mission. Unlisted agents are denied by default.</td></tr>
-    <tr><td class="k">what it parses</td><td class="v"><b>The real PostgreSQL C parser</b> (pg_query_go) — not regex. DROP hidden in a CTE, blocked functions like <code>pg_read_file</code> and <code>pg_sleep</code>, row limits, table scope: all enforced per agent.</td></tr>
-    <tr><td class="k">what it costs you</td><td class="v"><b>Sub-3ms overhead per query.</b> Policy check in memory. No LLM in the hot path, no API keys, no network round-trips. Fail-open on internal errors — it won't break your app.</td></tr>
-    <tr><td class="k">when you don't trust it yet</td><td class="v">Start in <b>monitor mode</b> — dashboard, anomaly detection, cost attribution, Slack alerts, no blocking. Flip to enforce when the violation log matches your intent.</td></tr>
-    <tr><td class="k">watching for drift</td><td class="v"><b>Anomaly detection runs locally.</b> Statistical baselines per agent, z-score analysis flags deviations. Plus a <b>10-tool MCP server</b> so agents can check their own policies and violations autonomously.</td></tr>
-  </table>
-</section>
-
-<section class="sec">
-  <div class="policy-strip">
-    <div class="policy-copy">
-      <h3>Policies are YAML, not a DSL.</h3>
-      <p>Mission-scoped policies define what each agent can do — allowed tables, blocked operations, row limits, query timeouts. Per agent, per mission. Everything else is blocked before it reaches the database.</p>
-    </div>
-    <div class="policy-code"><span class="c"># policies.yaml</span>
-<span class="k">agent:</span> cursor-ai
-<span class="k">mission:</span> summarize-feedback
-<span class="k">allow_tables:</span> <span class="ok">[feedback, reviews]</span>
-<span class="k">block_ops:</span> <span class="bad">[DROP, DELETE, TRUNCATE]</span>
-<span class="k">max_rows:</span> 500</div>
-  </div>
-</section>
-
-<section class="sec">
-  <div class="sec-head">
-    <div class="no">§2 — DASHBOARD</div>
-    <h2>See every agent, every query, every block.</h2>
-  </div>
-  <div class="dash">
-    <img src="dashboard_hero.png" alt="FaultWall proxy-mode dashboard — agents, query log, recent blocks, and violations per agent">
-    <div class="cap">Proxy-mode dashboard: live query log, recent blocks, violations per agent, cost attribution.</div>
-  </div>
-</section>
-
-<section class="sec" id="compatibility">
-  <div class="sec-head">
-    <div class="no">§3 — COMPATIBILITY</div>
-    <h2>Works with every managed Postgres.</h2>
-    <p>Validated against the stack your team actually runs. Drop-in, wire-level, no driver changes.</p>
-  </div>
-  <table class="compat">
-    <tr><td class="st g">ok</td><td class="name">Self-hosted Postgres</td><td class="sub">12+</td></tr>
-    <tr><td class="st g">ok</td><td class="name">AWS RDS</td><td class="sub">Postgres 16</td></tr>
-    <tr><td class="st g">ok</td><td class="name">AWS Aurora</td><td class="sub">Postgres 16.8</td></tr>
-    <tr><td class="st g">ok</td><td class="name">Neon</td><td class="sub">Serverless PG 17</td></tr>
-    <tr><td class="st g">ok</td><td class="name">PgBouncer</td><td class="sub">tx + session</td></tr>
-    <tr><td class="st y">note</td><td class="name">Supabase</td><td class="sub">pooler — <a href="https://github.com/shreyasXV/faultwall/blob/main/docs/compatibility.md#supabase-tested-with-real-instance-2026-04-27" target="_blank" rel="noopener">workaround</a></td></tr>
-    <tr><td class="st g">ok</td><td class="name">Cloud SQL · CrunchyBridge · DO MPG</td><td class="sub">expected¹</td></tr>
-  </table>
-  <div class="compat-foot">
-    <b>+0.14ms</b> median per-query overhead · throughput bound by your DB round-trip, not the proxy · <b>zero</b> agent code changes<br>
-    ¹ Same Postgres wire protocol as validated providers; tested path exists, instance not provisioned. <a href="https://github.com/shreyasXV/faultwall/blob/main/docs/compatibility.md" target="_blank" rel="noopener">Full compatibility matrix &amp; SCRAM config →</a>
-  </div>
-</section>
-
-<section class="sec" id="how-it-works">
-  <div class="sec-head">
-    <div class="no">§4 — SETUP</div>
-    <h2>Four steps to agentic protection.</h2>
-  </div>
-  <div class="steps" style="margin-top:32px;">
-    <div class="step">
-      <div class="num">01</div>
-      <div class="body">
-        <h3>Write your policy</h3>
-        <p>Define what each agent can do in policies.yaml — allowed tables, blocked operations, row limits, query timeouts. Per agent, per mission.</p>
+      <div class="flow rv" aria-label="Animated example of FaultWall deciding on an agent's statements. Synthetic data.">
+        <div class="flow-top"><span>support-agent &nbsp;/&nbsp; orders db</span><span class="on"><i></i>example</span></div>
+        <div class="track" aria-hidden="true">
+          <div class="line"></div>
+          <div class="node n1"><b></b><span>agent</span></div>
+          <div class="node px n2"><b></b><span>faultwall</span></div>
+          <div class="node n3"><b></b><span>postgres</span></div>
+          <div class="ring" id="ring"></div>
+          <div class="dot" id="dot"></div>
+        </div>
+        <div class="log" id="log" aria-live="off"></div>
+        <div class="review" id="review"><span><span class="what" id="rv-what">Approved</span> <span class="who" id="rv-who">dana@acme.test</span></span><span class="who" id="rv-note">in the FaultWall app</span></div>
+        <div class="flow-foot">Statements and outcomes from our v0.7.0 test run on a synthetic database.</div>
       </div>
-    </div>
-    <div class="step">
-      <div class="num">02</div>
-      <div class="body">
-        <h3>Run FaultWall proxy</h3>
-        <p>Single command to start:</p>
-        <code>./faultwall --proxy --listen :5433 --upstream localhost:5432 --policies ./policies.yaml</code>
+    </section>
+
+    <section class="steps">
+      <p class="sec-k rv">In practice</p>
+      <h2 class="rv">Most of what an agent does should just run. You decide the exceptions.</h2>
+      <div class="steps-grid">
+        <div class="base"></div><div class="bar" id="bar"></div>
+        <div class="step rv"><p class="n">01</p><h3>Scope it</h3><p>Each agent gets its own key and its own write rules, set in the FaultWall app.</p></div>
+        <div class="step rv"><p class="n">02</p><h3>Let it work</h3><p>Reads and permitted writes go straight through to Postgres. No agent rewrite.</p></div>
+        <div class="step rv"><p class="n">03</p><h3>Decide the exceptions</h3><p>Writes you selected wait for a reviewer. Blocked operations never reach the database.</p></div>
       </div>
-    </div>
-    <div class="step">
-      <div class="num">03</div>
-      <div class="body">
-        <h3>Point agents at port 5433</h3>
-        <p>Set application_name in the connection string. FaultWall parses the identity automatically.</p>
-        <code>postgres://...?application_name=agent:cursor-ai:mission:summarize</code>
+    </section>
+
+    <section class="ex" aria-labelledby="ex-t">
+      <div class="ex-copy">
+        <p class="sec-k rv">Try it</p>
+        <h2 id="ex-t" class="rv">Look up the order. Ask before changing it.</h2>
+        <p class="rv">Say your support agent can read orders but needs a yes before it changes one. It does the research on its own. The change waits at FaultWall, before it reaches Postgres.</p>
+        <a class="sublink rv" href="/how-it-works.html#decisions">What happens to each statement <span class="ar" aria-hidden="true">&rarr;</span></a>
       </div>
-    </div>
-    <div class="step">
-      <div class="num">04</div>
-      <div class="body">
-        <h3>Queries are checked in real-time</h3>
-        <p>Every query is parsed and checked against the agent's policy. Allowed queries pass through. Violations are blocked — the database never sees them.</p>
+      <div class="card rv" aria-label="Interactive example with no real data">
+        <div class="card-k"><span>support-agent &nbsp;/&nbsp; orders db</span><span>example</span></div>
+        <div class="done"><span>SELECT id, status FROM orders WHERE id = ?</span><span class="tag ok">ALLOW</span></div>
+        <div class="req"><small id="rq">support-agent wants to run</small>UPDATE orders SET status = ? WHERE id = ?</div>
+        <div class="state">
+          <span class="lbl">Order 1043 in Postgres</span>
+          <span class="val" id="val"><span class="now" id="now">processing</span><span class="arrow" id="arr">&rarr;</span><span class="next" id="nxt">refunded</span></span>
+        </div>
+        <p class="status" id="st" aria-live="polite">Held at the proxy. Nothing has changed in the database.</p>
+        <p class="reply" id="rp"></p>
+        <div class="acts">
+          <button type="button" id="ap">Approve</button>
+          <button type="button" id="dn" class="deny">Deny</button>
+        </div>
+        <button class="again" id="ag" type="button" hidden>Replay example</button>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<section class="sec">
-  <div class="sec-head">
-    <div class="no">§5 — ARCHITECTURE</div>
-    <h2>Inline — nothing gets past.</h2>
-  </div>
-  <div class="arch">
-<pre>
-┌──────────────┐         ┌─────────────────────────┐         ┌──────────────┐
-│   AI Agent   │ ──────► │ <span class="ph">FAULTWALL PROXY  :5433</span> │ ──────► │  PostgreSQL  │
-│              │         │ parse · attribute ·     │         │    :5432     │
-│ connects to  │         │ enforce                 │         │ only allowed │
-│    :5433     │    <span class="dim">┌────┤ blocked queries stop    │</span>         │   queries    │
-└──────────────┘    <span class="dim">│    │ here — DB never sees    │</span>         └──────────────┘
-                    <span class="dim">▼    │ them                    │</span>
-                 <span class="dim">violation └─────────────────────────┘</span>
-                 <span class="dim">log + alert</span>
-</pre>
-  </div>
-</section>
+    <section class="close">
+      <div>
+        <p class="sec-k rv">Work with us</p>
+        <h2 class="rv">Bring us one workflow.</h2>
+        <p class="rv">Tell us what your agent should be doing that it isn't allowed to do today. We'll put it under limits your team agrees on, run it in staging, and give the owner the evidence to decide on production.</p>
+        <div class="ctas rv">
+          <a class="btn" href="mailto:shreyas@faultwall.com?subject=Evaluate%20one%20workflow">Evaluate a workflow with us <span class="ar" aria-hidden="true">&rarr;</span></a>
+          <a class="sublink" href="/how-it-works.html">See how it works <span class="ar" aria-hidden="true">&rarr;</span></a>
+        </div>
+        <p class="small rv">One agent workflow, in your staging environment. We set it up with you.</p>
+    </section>
+  </main>
 
-<section class="sec">
-  <div class="sec-head">
-    <div class="no">§6 — DEPLOYMENT</div>
-    <h2>Two modes for every stage.</h2>
-  </div>
-  <div class="modes" style="margin-top:32px; border-top:1px solid var(--line);">
-    <div class="mode">
-      <div class="tag">MODE 1 — RECOMMENDED</div>
-      <h3>Proxy · enforce</h3>
-      <p>Inline between agents and PostgreSQL. Every query parsed and checked before it executes. Violations blocked, connection preserved.</p>
-      <ul>
-        <li>Intercepts 100% of queries</li>
-        <li>Real-time blocking</li>
-        <li>Sub-3ms latency overhead</li>
-        <li>Fail-open on internal errors</li>
-      </ul>
-      <div class="run"><span class="c"># enforce policy inline</span>
-POLICY_ENFORCEMENT=enforce \
-./faultwall --proxy --listen :5433 \
-  --upstream localhost:5432 \
-  --policies ./policies.yaml</div>
-    </div>
-    <div class="mode">
-      <div class="tag dim">MODE 2 — OBSERVE</div>
-      <h3>Monitor · sidecar</h3>
-      <p>Read-only sidecar polling pg_stat_activity. Not in the data path — visibility without enforcement.</p>
-      <ul>
-        <li>Dashboard with agent activity</li>
-        <li>Anomaly detection &amp; alerting</li>
-        <li>Cost attribution per agent</li>
-        <li>Slack notifications · log-only mode</li>
-      </ul>
-      <div class="run"><span class="c"># observe only, no blocking</span>
-DATABASE_URL="postgres://…" \
-POLICY_FILE=./policies.yaml \
-./faultwall</div>
-    </div>
-  </div>
-</section>
-
-<section class="sec">
-  <div class="duo">
-    <div>
-      <h3>Self-tuning detection</h3>
-      <p>Anomaly detection starts in observe-only mode and builds per-agent baselines from your real traffic before it ever flags anything. A genetic search tunes sensitivity thresholds and window sizes against your workload, so detection adapts to how your agents actually behave instead of a fixed global rule.</p>
-      <div class="flow"><b>observe</b> → learn baselines → you decide → <b>enforce</b></div>
-    </div>
-    <div>
-      <h3>Enterprise: kernel-level attribution</h3>
-      <p>Need deeper visibility? Our eBPF engine hooks into the Linux kernel's scheduler and block I/O subsystem. Every CPU nanosecond and disk byte attributed to the exact PostgreSQL PID — mapped back to the agent in real-time.</p>
-      <p class="fine">Available for teams running self-hosted PostgreSQL on Linux 5.8+ with PostgreSQL 14–16.</p>
-      <a class="mailto" href="mailto:shreyas@faultwall.com">shreyas@faultwall.com →</a>
-    </div>
-  </div>
-</section>
-
-<section class="sec" id="pricing">
-  <div class="sec-head">
-    <div class="no">§7 — PRICING</div>
-    <h2>Free to self-host. $200/mo when you want it managed.</h2>
-    <p>Self-host everything for free, forever. Upgrade to the hosted control plane for telemetry, risk scoring, and a managed review queue.</p>
-  </div>
-  <div class="pricing" style="margin-top:32px; border-top:1px solid var(--line);">
-    <div class="price">
-      <div class="name">SELF-HOSTED</div>
-      <div class="amt">$0</div>
-      <div class="tag">Self-host the full firewall. Yours forever.</div>
-      <ul>
-        <li>Inline L7 proxy &amp; deterministic SQL parsing</li>
-        <li>Mission-scoped YAML policies (tables, ops, row limits)</li>
-        <li>Agent identity &amp; real-time enforcement</li>
-        <li>Anomaly detection &amp; MCP server</li>
-        <li>All self-hosted features — no feature gates</li>
-      </ul>
-      <a class="btn-hollow" style="display:inline-flex;" href="https://github.com/shreyasXV/faultwall">View on GitHub</a>
-    </div>
-    <div class="price reco">
-      <div class="name">TEAM — RECOMMENDED</div>
-      <div class="amt">$200<span>/mo</span></div>
-      <div class="tag">Everything in self-hosted, plus the hosted control plane.</div>
-      <ul>
-        <li>Hosted control plane — nothing to operate</li>
-        <li>Telemetry dashboard (metadata only — queries stay yours)</li>
-        <li>QWM risk scoring across your workload</li>
-        <li>APA review queue + auto-approve policies</li>
-        <li>Installations dashboard · email support</li>
-      </ul>
-      <a class="btn-solid" style="display:inline-flex;" href="mailto:shreyas@faultwall.com">Get Started</a>
-    </div>
-  </div>
-  <div class="price-foot">Sign up free — upgrade to Team anytime from your dashboard.</div>
-</section>
-
-<section class="cta">
-  <h2>Your AI agent has database credentials. FaultWall shows you what it does — and stops what it shouldn't.</h2>
-  <p>Sign up free, connect your Postgres, and see every agent query in minutes. Self-host or use the hosted control plane.</p>
-  <div class="cta-row">
-    <a class="btn-solid" href="https://github.com/shreyasXV/faultwall#quick-start-5-minutes">Get started — it's free</a>
-    <a class="btn-hollow" href="https://app.faultwall.com">hosted control plane →</a>
-  </div>
-</section>
-
-<footer>
-  <div class="foot-grid">
-    <div class="foot-brand"><img src="logo.png" alt="FaultWall">faultwall<span style="color:var(--text-3); font-weight:400;"> — the trust layer between AI agents and your database.</span></div>
-    <div class="foot-links">
-      <a href="https://github.com/shreyasXV/faultwall#quick-start-5-minutes">quick start</a>
-      <a href="https://github.com/shreyasXV/faultwall#full-api-reference">api reference</a>
-      <a href="https://github.com/shreyasXV/faultwall">github</a>
-      <a href="https://twitter.com/FaultWall">twitter</a>
-      <a href="mailto:shreyas@faultwall.com">contact</a>
-    </div>
-  </div>
-  <div class="foot-bottom">
-    <span>Built by <a href="https://github.com/shreyasXV">Shreyas Shubham</a> · © 2026</span>
-    <span>faultwall.com</span>
-  </div>
-</footer>
-
+  <footer>
+    <span>faultwall &nbsp;/&nbsp; built for Postgres</span>
+    <nav><a href="/how-it-works.html">How it works</a><a href="https://github.com/shreyasXV/faultwall">GitHub</a><a href="https://twitter.com/FaultWall">X</a><a href="mailto:shreyas@faultwall.com">Contact</a></nav>
+  </footer>
 </div>
+
 <script>
-document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
-  t.classList.add('on');
-  document.getElementById('cmdText').textContent = t.dataset.cmd;
-}));
+/* interactive card works with or without the motion library */
+(() => {
+  const ap=document.getElementById('ap'), dn=document.getElementById('dn'), ag=document.getElementById('ag');
+  const st=document.getElementById('st'), rp=document.getElementById('rp');
+  const now=document.getElementById('now'), arr=document.getElementById('arr'), nxt=document.getElementById('nxt');
+  function decide(ok){
+    ap.parentElement.hidden=true; ag.hidden=false; document.getElementById('rq').textContent = ok ? 'support-agent ran, after approval' : 'support-agent asked to run (denied)';
+    if(ok){
+      now.textContent='refunded'; now.style.color='var(--green)'; arr.hidden=true; nxt.hidden=true;
+      st.textContent='Approved. The proxy ran the write, and order 1043 is now refunded.';
+      rp.textContent='agent receives: UPDATE 1';
+    }else{
+      now.style.color='var(--ink)'; arr.hidden=true; nxt.hidden=true;
+      st.textContent='Denied. The write never ran. Order 1043 is unchanged.';
+      rp.textContent='agent receives: held for approval and denied by dana@acme.test: "Needs a ticket." It did not run.';
+    }
+    window.__fwPulse && window.__fwPulse(document.getElementById('val'));
+  }
+  ap.onclick=()=>decide(true); dn.onclick=()=>decide(false);
+  ag.onclick=()=>{ap.parentElement.hidden=false; ag.hidden=true; document.getElementById('rq').textContent='support-agent wants to run'; now.textContent='processing'; now.style.color=''; arr.hidden=false; nxt.hidden=false;
+    st.textContent='Held at the proxy. Nothing has changed in the database.'; rp.textContent=''; ap.focus();};
+})();
+</script>
+
+<script type="module">
+import { animate, inView, stagger } from "https://cdn.jsdelivr.net/npm/motion@11.11.13/+esm";
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const log = $('#log'), dot = $('#dot'), ring = $('#ring'), review = $('#review');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const SEQ = [
+  { sql:'SELECT id, status FROM orders WHERE id IN (?, ?, ?)', kind:'allow', tag:'ALLOW', why:'3 rows returned' },
+  { sql:'UPDATE orders SET status = ? WHERE id = ?', kind:'hold', tag:'HOLD', after:'APPROVED', why:'Waited at the proxy for a reviewer. Then ran: UPDATE 1', who:'dana@acme.test', verdict:'Approved' },
+  { sql:'DROP TABLE orders', kind:'block', tag:'BLOCKED', why:'Never reached Postgres' },
+  { sql:'DELETE FROM orders WHERE id = ?', kind:'deny', tag:'HOLD', after:'DENIED', why:'Denied with a reason: "Deletes need a ticket." Row kept.', who:'dana@acme.test', verdict:'Denied' },
+];
+
+function addRow(s){
+  const r = document.createElement('div'); r.className='row';
+  r.innerHTML = `<span class="sql"></span><span class="tag"></span><span class="why"></span>`;
+  r.querySelector('.sql').textContent = s.sql;
+  log.appendChild(r); return r;
+}
+function setTag(r, text, cls){ const t=r.querySelector('.tag'); t.textContent=text; t.className='tag '+cls; }
+
+const track = () => $('.track').getBoundingClientRect().width;
+const X = f => track() * f;   // dot travel in px (0 = agent, .5 = faultwall, 1 = postgres)
+const COLOR = { allow:'#315b40', hold:'#946410', block:'#9e3a2c', deny:'#9e3a2c' };
+
+async function play(s){
+  const r = addRow(s);
+  const why = r.querySelector('.why'); why.textContent='';
+  await animate(r, { opacity:[0,1], y:[10,0] }, { duration:.45, ease:[.16,1,.3,1] });
+  dot.style.background = COLOR.allow;
+  animate(dot, { opacity:1, x:0 }, { duration:0 });
+  await animate(dot, { x: X(.5) }, { duration:.75, ease:[.45,0,.2,1] });
+  if (s.kind==='allow'){
+    setTag(r,s.tag,'ok'); animate(r.querySelector('.tag'), { scale:[.6,1], opacity:[0,1] }, { type:'spring', stiffness:520, damping:22 });
+    await animate(dot, { x: X(1) }, { duration:.7, ease:[.45,0,.2,1] });
+    why.textContent=s.why; animate(why,{opacity:[0,1]},{duration:.3});
+    await animate(dot, { opacity:0, scale:[1,1.8] }, { duration:.35 }); animate(dot,{scale:1},{duration:0});
+  }
+  if (s.kind==='hold' || s.kind==='deny'){
+    dot.style.background = COLOR.hold; animate(dot,{opacity:0},{duration:.2});
+    setTag(r,'HOLD','hold'); animate(r.querySelector('.tag'), { scale:[.6,1], opacity:[0,1] }, { type:'spring', stiffness:520, damping:22 });
+    why.textContent='Waiting at the proxy. Row unchanged.'; animate(why,{opacity:[0,1]},{duration:.3});
+    const pulse = animate(ring, { opacity:[.9,0], scale:[.7,1.9] }, { duration:1.1, repeat:Infinity, ease:'easeOut' });
+    await sleep(1500);
+    $('#rv-what').textContent = 'Waiting for review'; $('#rv-what').style.color = COLOR.hold; $('#rv-who').textContent = '';
+    await animate(review, { opacity:[0,1], y:[12,0] }, { type:'spring', stiffness:300, damping:26 });
+    await sleep(900);
+    $('#rv-what').textContent = s.verdict; $('#rv-who').textContent = s.who;
+    $('#rv-what').style.color = s.kind==='hold' ? COLOR.allow : COLOR.deny;
+    animate('#rv-what', { opacity:[0,1] }, { duration:.25 });
+    await sleep(600);
+    pulse.stop(); animate(ring,{opacity:0},{duration:.2});
+    if (s.kind==='hold'){
+      setTag(r,s.after,'ap'); why.textContent=s.why; dot.style.background = COLOR.allow; animate(dot,{opacity:1},{duration:.15});
+      animate(r.querySelector('.tag'), { scale:[.6,1] }, { type:'spring', stiffness:520, damping:22 });
+      await animate(dot, { x: X(1) }, { duration:.7, ease:[.45,0,.2,1] });
+      await animate(dot, { opacity:0, scale:[1,1.8] }, { duration:.35 }); animate(dot,{scale:1},{duration:0});
+    } else {
+      setTag(r,s.after,'dn'); why.textContent=s.why; dot.style.background = COLOR.deny; animate(dot,{opacity:1},{duration:.15});
+      animate(r.querySelector('.tag'), { scale:[.6,1] }, { type:'spring', stiffness:520, damping:22 });
+      await animate(dot, { opacity:0, scale:[1,.3] }, { duration:.4 }); animate(dot,{scale:1},{duration:0});
+    }
+    why.textContent=s.why;
+    animate(review, { opacity:0, y:6 }, { duration:.35, delay:.6 });
+  }
+  if (s.kind==='block'){
+    dot.style.background = COLOR.block;
+    setTag(r,s.tag,'no'); animate(r.querySelector('.tag'), { scale:[.6,1], opacity:[0,1] }, { type:'spring', stiffness:520, damping:22 });
+    r.querySelector('.sql').classList.add('struck');
+    await animate(dot, { x:[X(.5), X(.5)-10, X(.5), X(.5)-6, X(.5)] }, { duration:.45 });
+    why.textContent=s.why; animate(why,{opacity:[0,1]},{duration:.3});
+    await animate(dot, { x: X(.32), opacity:0 }, { duration:.5, ease:'easeIn' });
+  }
+  await sleep(900);
+}
+
+async function loop(){
+  while(true){
+    for (const s of SEQ) await play(s);
+    await sleep(2200);
+    await animate(log.children, { opacity:0, y:-6 }, { duration:.4, delay:stagger(.05) });
+    log.innerHTML='';
+  }
+}
+
+function staticFlow(){
+  SEQ.forEach(s=>{ const r=addRow(s); r.querySelector('.why').textContent=s.why;
+    setTag(r, s.after||s.tag, s.kind==='allow'?'ok':s.kind==='hold'?'ap':s.kind==='deny'?'dn':'no');
+    if(s.kind==='block') r.querySelector('.sql').classList.add('struck'); });
+}
+
+window.__fwPulse = el => !reduce && animate(el, { y:[6,0], opacity:[.3,1] }, { type:'spring', stiffness:400, damping:20 });
+
+if (reduce){ staticFlow(); }
+else {
+  document.documentElement.classList.add('mo');
+  // hero entrance
+  animate('.hero .kicker', { opacity:[0,1], y:[8,0] }, { duration:.6 });
+  animate('#h1 .w', { opacity:[0,1], y:[28,0], filter:['blur(6px)','blur(0px)'] }, { duration:.8, delay:stagger(.07,{startDelay:.1}), ease:[.16,1,.3,1] });
+  animate('.hero .intro, .hero .ctas, .hero .small', { opacity:[0,1], y:[14,0] }, { duration:.7, delay:stagger(.1,{startDelay:.6}), ease:[.16,1,.3,1] });
+  animate('.flow', { opacity:[0,1], y:[24,0], scale:[.98,1] }, { duration:.9, delay:.45, ease:[.16,1,.3,1] }).then(()=>{ sleep(300).then(loop); });
+  // scroll reveals
+  document.querySelectorAll('main section:not(.hero)').forEach(sec=>{
+    inView(sec, () => {
+      animate(sec.querySelectorAll('.rv'), { opacity:[0,1], y:[22,0] }, { duration:.75, delay:stagger(.09), ease:[.16,1,.3,1] });
+      const bar = sec.querySelector('#bar');
+      if (bar) animate(bar, { scaleX:[0,1] }, { duration:1.4, delay:.2, ease:[.65,0,.35,1] });
+    }, { amount:.25 });
+  });
+}
 </script>
 </body>
 </html>

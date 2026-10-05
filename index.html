@@ -163,6 +163,20 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
   .review{margin:0 14px 14px}
   .card{padding:20px}
 }
+/* trusted-by marquee */
+.trust{padding:32px 0;border-top:1px solid var(--rule);margin-top:8px}
+.trust-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:24px}
+.mq{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+.mq-track{display:flex;width:max-content;will-change:transform}
+.mq-set{display:flex;align-items:center;gap:clamp(56px,8vw,112px);padding-right:clamp(56px,8vw,112px)}
+.lg{display:flex;align-items:center;gap:10px;height:34px;filter:grayscale(1);opacity:.72;transition:opacity .25s,filter .25s}
+.lg:hover{filter:none;opacity:1}
+.lg img{display:block;height:100%;width:auto}
+.lg.blinka img{height:28px}.lg.noom img{height:19px}
+.lg.pluto img{height:30px;border-radius:7px}
+.lg.pluto span{font-family:var(--sans);font-weight:600;font-size:21px;letter-spacing:-.02em;color:#1c253a}
+.mq.static .mq-track{width:auto;justify-content:center}.mq.static .mq-set[aria-hidden]{display:none}
+@media(max-width:720px){.trust{padding:26px 0 24px}.lg{height:28px}.lg.blinka img{height:23px}.lg.noom img{height:16px}.lg.pluto img{height:25px}.lg.pluto span{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -204,6 +218,32 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
         <div class="review" id="review"><span><span class="what" id="rv-what">Approved</span> <span class="who" id="rv-who">dana@acme.test</span></span><span class="who" id="rv-note">in the FaultWall app</span></div>
         <div class="flow-foot">Statements and outcomes from our v0.7.0 test run on a synthetic database.</div>
       </div>
+    </section>
+
+    <section class="trust" aria-label="Trusted by engineers at">
+      <p class="trust-k">Trusted by engineers at</p>
+      <div class="mq" id="mq"><div class="mq-track" id="mq-track">
+        <div class="mq-set">
+          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="0"><img src="/logos/blinka.svg" alt="Blinka"></a>
+          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="0"><img src="/logos/noomshot.svg" alt="Noomshot"></a>
+          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="0"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
+        </div>
+        <div class="mq-set" aria-hidden="true">
+          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
+          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
+          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
+        </div>
+        <div class="mq-set" aria-hidden="true">
+          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
+          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
+          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
+        </div>
+        <div class="mq-set" aria-hidden="true">
+          <a class="lg blinka" href="https://blinka.co" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/blinka.svg" alt=""></a>
+          <a class="lg noom" href="https://noomshot.com" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/noomshot.svg" alt=""></a>
+          <a class="lg pluto" href="https://pluto.net.in" target="_blank" rel="noopener" tabindex="-1"><img src="/logos/pluto.png" alt=""><span>pluto</span></a>
+        </div>
+      </div></div>
     </section>
 
     <section class="steps">
@@ -378,6 +418,21 @@ function staticFlow(){
     if(s.kind==='block') r.querySelector('.sql').classList.add('struck'); });
 }
 
+
+// trusted-by marquee: four identical sets, slide one set width forever
+(() => {
+  const mq = document.getElementById('mq'), tr = document.getElementById('mq-track');
+  if (reduce) { mq.classList.add('static'); return; }
+  let ctl;
+  const start = () => {
+    ctl && ctl.stop();
+    const w = tr.querySelector('.mq-set').getBoundingClientRect().width;
+    ctl = animate(tr, { x: [0, -w] }, { duration: w / 40, ease: 'linear', repeat: Infinity });
+  };
+  start(); addEventListener('resize', () => { clearTimeout(window.__mqT); window.__mqT = setTimeout(start, 200); });
+  mq.addEventListener('mouseenter', () => ctl && (ctl.speed = 0.25));
+  mq.addEventListener('mouseleave', () => ctl && (ctl.speed = 1));
+})();
 window.__fwPulse = el => !reduce && animate(el, { y:[6,0], opacity:[.3,1] }, { type:'spring', stiffness:400, damping:20 });
 
 if (reduce){ staticFlow(); }

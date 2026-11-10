@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FaultWall: put your agents to work in Postgres, keep control</title>
-<meta name="description" content="Give each AI agent scoped access to Postgres. Permitted work runs. The writes you pick wait for someone on your team.">
+<title>FaultWall: put your AI agents to work on your APIs, MCP tools and databases, and keep control</title>
+<meta name="description" content="FaultWall sits between your AI agents and the APIs, MCP servers and databases they use. Permitted work runs, risky calls are blocked, and the ones you pick wait for someone on your team. Monitoring is free.">
 <link rel="icon" href="/favicon.png">
 <link rel="canonical" href="https://faultwall.com/">
-<meta property="og:title" content="FaultWall: put your agents to work in Postgres, keep control">
-<meta property="og:description" content="Give each AI agent scoped access to Postgres. Permitted work runs. The writes you pick wait for someone on your team.">
+<meta property="og:title" content="FaultWall: put your AI agents to work on your APIs, MCP tools and databases, and keep control">
+<meta property="og:description" content="FaultWall sits between your AI agents and the APIs, MCP servers and databases they use. Permitted work runs, risky calls are blocked, and the ones you pick wait for someone on your team. Monitoring is free.">
 <meta property="og:url" content="https://faultwall.com/">
 <meta property="og:image" content="https://faultwall.com/og-breach.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -212,9 +212,9 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
   <main>
     <section class="hero">
       <div>
-        <p class="kicker rv">Access control for AI agents on Postgres</p>
+        <p class="kicker rv">Control for AI agents on your APIs, MCP tools and databases</p>
         <h1 id="h1"><span class="w">Put</span> <span class="w">your</span> <span class="w">agents</span> <span class="w">to</span> <span class="w">work.</span><em><span class="w">Keep</span> <span class="w">control.</span></em></h1>
-        <p class="intro rv">Give each agent scoped access to your database. Permitted work runs. The writes you pick wait for someone on your team.</p>
+        <p class="intro rv">FaultWall sits between your agents and every API, MCP server and database they touch. Permitted work runs. Risky calls are blocked, and the ones you pick wait for someone on your team. Your real keys stay with FaultWall, never with the agent.</p>
         <div class="ctas rv">
           <a class="btn" href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com?subject=Evaluate%20one%20workflow">Evaluate a workflow with us <span class="ar" aria-hidden="true">&rarr;</span></a>
           <a class="sublink" href="/how-it-works.html">See how it works <span class="ar" aria-hidden="true">&rarr;</span></a>
@@ -222,19 +222,19 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
         <p class="small rv">One agent workflow, in your staging environment. We set it up with you.</p>
       </div>
 
-      <div class="flow rv" aria-label="Animated example of FaultWall deciding on an agent's statements. Synthetic data.">
-        <div class="flow-top"><span>support-agent &nbsp;/&nbsp; orders db</span><span class="on"><i></i>example</span></div>
+      <div class="flow rv" aria-label="Animated example of FaultWall deciding on an agent's calls. Synthetic data.">
+        <div class="flow-top"><span>support-agent &nbsp;/&nbsp; stripe &middot; mcp &middot; postgres</span><span class="on"><i></i>example</span></div>
         <div class="track" aria-hidden="true">
           <div class="line"></div>
           <div class="node n1"><b></b><span>agent</span></div>
           <div class="node px n2"><b></b><span>faultwall</span></div>
-          <div class="node n3"><b></b><span>postgres</span></div>
+          <div class="node n3"><b></b><span>your systems</span></div>
           <div class="ring" id="ring"></div>
           <div class="dot" id="dot"></div>
         </div>
         <div class="log" id="log" aria-live="off"></div>
-        <div class="review" id="review"><span><span class="what" id="rv-what">Approved</span> <span class="who" id="rv-who">dana@acme.test</span></span><span class="who" id="rv-note">in the FaultWall app</span></div>
-        <div class="flow-foot">Statements and outcomes from our v0.7.0 test run on a synthetic database.</div>
+        <div class="review" id="review"><span><span class="what" id="rv-what">Approved</span> <span class="who" id="rv-who">dana@acme.test</span></span><span class="who" id="rv-note">on your FaultWall approval page</span></div>
+        <div class="flow-foot">Calls and outcomes from our test runs against Stripe's mock server, an MCP file server and a test Postgres. Synthetic data.</div>
       </div>
     </section>
 
@@ -243,28 +243,28 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
       <h2 class="rv">Most of what an agent does should just run. You decide the exceptions.</h2>
       <div class="steps-grid">
         <div class="base"></div><div class="bar" id="bar"></div>
-        <div class="step rv"><p class="n">01</p><h3>Scope it</h3><p>Each agent gets its own key and its own write rules, set in the FaultWall app.</p></div>
-        <div class="step rv"><p class="n">02</p><h3>Let it work</h3><p>Reads and permitted writes go straight through to Postgres. No agent rewrite.</p></div>
-        <div class="step rv"><p class="n">03</p><h3>Decide the exceptions</h3><p>Writes you selected wait for a reviewer. Blocked operations never reach the database.</p></div>
+        <div class="step rv"><p class="n">01</p><h3>Scope it</h3><p>Each agent gets its own FaultWall key and its own rules for each API, MCP server and database. Your real keys stay with FaultWall.</p></div>
+        <div class="step rv"><p class="n">02</p><h3>Let it work</h3><p>Permitted calls go straight through. Point the agent at FaultWall instead of the service. No agent rewrite.</p></div>
+        <div class="step rv"><p class="n">03</p><h3>Decide the exceptions</h3><p>Calls you pick wait for a reviewer. Blocked calls never reach your systems.</p></div>
       </div>
     </section>
 
     <section class="ex" aria-labelledby="ex-t">
       <div class="ex-copy">
         <p class="sec-k rv">Try it</p>
-        <h2 id="ex-t" class="rv">Look up the order. Ask before changing it.</h2>
-        <p class="rv">Say your support agent can read orders but needs a yes before it changes one. It does the research on its own. The change waits at FaultWall, before it reaches Postgres.</p>
-        <a class="sublink rv" href="/how-it-works.html#decisions">What happens to each statement <span class="ar" aria-hidden="true">&rarr;</span></a>
+        <h2 id="ex-t" class="rv">Look up the charge. Ask before refunding it.</h2>
+        <p class="rv">Say your support agent can look up charges but needs a yes before it refunds one. It does the research on its own. The refund waits at FaultWall, before it reaches Stripe. The same works for MCP tools and database writes.</p>
+        <a class="sublink rv" href="/how-it-works.html#decisions">What happens to each call <span class="ar" aria-hidden="true">&rarr;</span></a>
       </div>
       <div class="card rv" aria-label="Interactive example with no real data">
-        <div class="card-k"><span>support-agent &nbsp;/&nbsp; orders db</span><span>example</span></div>
-        <div class="done"><span>SELECT id, status FROM orders WHERE id = ?</span><span class="tag ok">ALLOW</span></div>
-        <div class="req"><small id="rq">support-agent wants to run</small>UPDATE orders SET status = ? WHERE id = ?</div>
+        <div class="card-k"><span>support-agent &nbsp;/&nbsp; stripe</span><span>example</span></div>
+        <div class="done"><span>GET /v1/charges/{id}</span><span class="tag ok">ALLOW</span></div>
+        <div class="req"><small id="rq">support-agent wants to send</small>POST /v1/refunds &nbsp;amount: $90.00</div>
         <div class="state">
-          <span class="lbl">Order 1043 in Postgres</span>
-          <span class="val" id="val"><span class="now" id="now">processing</span><span class="arrow" id="arr">&rarr;</span><span class="next" id="nxt">refunded</span></span>
+          <span class="lbl">Charge ch_1043 in Stripe</span>
+          <span class="val" id="val"><span class="now" id="now">paid</span><span class="arrow" id="arr">&rarr;</span><span class="next" id="nxt">refunded</span></span>
         </div>
-        <p class="status" id="st" aria-live="polite">Held at the proxy. Nothing has changed in the database.</p>
+        <p class="status" id="st" aria-live="polite">Held at FaultWall. Nothing has been sent to Stripe.</p>
         <p class="reply" id="rp"></p>
         <div class="acts">
           <button type="button" id="ap">Approve</button>
@@ -284,20 +284,20 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
           <p class="price">Free</p>
           <p class="lead">Run FaultWall in watch-only mode and see what your agents actually do. Nothing is stopped or slowed down.</p>
           <ul>
-            <li>Every statement each agent runs, logged by agent</li>
+            <li>Every call each agent makes, to every API, MCP tool and database, logged by agent</li>
             <li>What your rules would have blocked or held, before you turn anything on</li>
-            <li>Statement text stays on your servers</li>
+            <li>Argument values and keys stay on your servers</li>
           </ul>
-          <div class="go"><a class="sublink" href="https://app.faultwall.com/">Start monitoring <span class="ar" aria-hidden="true">&rarr;</span></a></div>
+          <div class="go"><a class="sublink" href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com?subject=Start%20monitoring%20with%20FaultWall">Start monitoring, free <span class="ar" aria-hidden="true">&rarr;</span></a></div>
         </div>
         <div class="plan paid rv">
           <p class="pk">Watch and act</p>
           <h3>Enforcement</h3>
           <p class="price">Paid</p>
-          <p class="lead">Turn the same rules on. FaultWall acts on each statement before it reaches your database.</p>
+          <p class="lead">Turn the same rules on. FaultWall acts on each call before it reaches your systems.</p>
           <ul>
-            <li>Blocks what your rules forbid, so it never reaches Postgres</li>
-            <li>Holds the writes you pick until someone on your team approves them</li>
+            <li>Blocks what your rules forbid, so it never reaches the service</li>
+            <li>Holds the calls you pick until someone on your team approves them</li>
             <li>Everything in Monitoring</li>
           </ul>
           <div class="go"><a class="btn" href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com?subject=FaultWall%20enforcement%20pricing">Talk to us about pricing <span class="ar" aria-hidden="true">&rarr;</span></a></div>
@@ -347,7 +347,7 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
   </main>
 
   <footer>
-    <span>faultwall &nbsp;/&nbsp; built for Postgres</span>
+    <span>faultwall &nbsp;/&nbsp; for AI agents on APIs, MCP and databases</span>
     <nav><a href="/how-it-works.html">How it works</a><a href="https://github.com/shreyasXV/faultwall">GitHub</a><a href="https://twitter.com/FaultWall">X</a><a href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com">Contact Shreyas &amp; Soumya</a></nav>
   </footer>
 </div>
@@ -359,21 +359,21 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
   const st=document.getElementById('st'), rp=document.getElementById('rp');
   const now=document.getElementById('now'), arr=document.getElementById('arr'), nxt=document.getElementById('nxt');
   function decide(ok){
-    ap.parentElement.hidden=true; ag.hidden=false; document.getElementById('rq').textContent = ok ? 'support-agent ran, after approval' : 'support-agent asked to run (denied)';
+    ap.parentElement.hidden=true; ag.hidden=false; document.getElementById('rq').textContent = ok ? 'support-agent sent, after approval' : 'support-agent asked to send (denied)';
     if(ok){
       now.textContent='refunded'; now.style.color='var(--green)'; arr.hidden=true; nxt.hidden=true;
-      st.textContent='Approved. The proxy ran the write, and order 1043 is now refunded.';
-      rp.textContent='agent receives: UPDATE 1';
+      st.textContent='Approved. FaultWall sent the refund, and charge ch_1043 is now refunded.';
+      rp.textContent='agent receives: 200 OK, refund created';
     }else{
       now.style.color='var(--ink)'; arr.hidden=true; nxt.hidden=true;
-      st.textContent='Denied. The write never ran. Order 1043 is unchanged.';
-      rp.textContent='agent receives: held for approval and denied by dana@acme.test: "Needs a ticket." It did not run.';
+      st.textContent='Denied. The refund was never sent. Charge ch_1043 is unchanged.';
+      rp.textContent='agent receives: held for approval and denied by dana@acme.test: "Needs a ticket." It was never sent.';
     }
     window.__fwPulse && window.__fwPulse(document.getElementById('val'));
   }
   ap.onclick=()=>decide(true); dn.onclick=()=>decide(false);
-  ag.onclick=()=>{ap.parentElement.hidden=false; ag.hidden=true; document.getElementById('rq').textContent='support-agent wants to run'; now.textContent='processing'; now.style.color=''; arr.hidden=false; nxt.hidden=false;
-    st.textContent='Held at the proxy. Nothing has changed in the database.'; rp.textContent=''; ap.focus();};
+  ag.onclick=()=>{ap.parentElement.hidden=false; ag.hidden=true; document.getElementById('rq').textContent='support-agent wants to send'; now.textContent='paid'; now.style.color=''; arr.hidden=false; nxt.hidden=false;
+    st.textContent='Held at FaultWall. Nothing has been sent to Stripe.'; rp.textContent=''; ap.focus();};
 })();
 </script>
 
@@ -385,10 +385,10 @@ const log = $('#log'), dot = $('#dot'), ring = $('#ring'), review = $('#review')
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const SEQ = [
-  { sql:'SELECT id, status FROM orders WHERE id IN (?, ?, ?)', kind:'allow', tag:'ALLOW', why:'3 rows returned' },
-  { sql:'UPDATE orders SET status = ? WHERE id = ?', kind:'hold', tag:'HOLD', after:'APPROVED', why:'Waited at the proxy for a reviewer. Then ran: UPDATE 1', who:'dana@acme.test', verdict:'Approved' },
-  { sql:'DROP TABLE orders', kind:'block', tag:'BLOCKED', why:'Never reached Postgres' },
-  { sql:'DELETE FROM orders WHERE id = ?', kind:'deny', tag:'HOLD', after:'DENIED', why:'Denied with a reason: "Deletes need a ticket." Row kept.', who:'dana@acme.test', verdict:'Denied' },
+  { sql:'stripe  GET /v1/charges', kind:'allow', tag:'ALLOW', why:'200 OK: 3 charges returned' },
+  { sql:'stripe  POST /v1/refunds  amount: $90.00', kind:'hold', tag:'HOLD', after:'APPROVED', why:'Waited at FaultWall for a reviewer. Then sent: 200 OK, refund created', who:'dana@acme.test', verdict:'Approved' },
+  { sql:'mcp  read_text_file  private/payroll.csv', kind:'block', tag:'BLOCKED', why:'Outside its allowed folders. Never reached the file server' },
+  { sql:'postgres  DELETE FROM orders WHERE id = ?', kind:'deny', tag:'HOLD', after:'DENIED', why:'Denied with a reason: "Deletes need a ticket." Row kept.', who:'dana@acme.test', verdict:'Denied' },
 ];
 
 function addRow(s){
@@ -400,7 +400,7 @@ function addRow(s){
 function setTag(r, text, cls){ const t=r.querySelector('.tag'); t.textContent=text; t.className='tag '+cls; }
 
 const track = () => $('.track').getBoundingClientRect().width;
-const X = f => track() * f;   // dot travel in px (0 = agent, .5 = faultwall, 1 = postgres)
+const X = f => track() * f;   // dot travel in px (0 = agent, .5 = faultwall, 1 = your systems)
 const COLOR = { allow:'#315b40', hold:'#946410', block:'#9e3a2c', deny:'#9e3a2c' };
 
 async function play(s){
@@ -419,7 +419,7 @@ async function play(s){
   if (s.kind==='hold' || s.kind==='deny'){
     dot.style.background = COLOR.hold; animate(dot,{opacity:0},{duration:.2});
     setTag(r,'HOLD','hold'); animate(r.querySelector('.tag'), { scale:[.6,1], opacity:[0,1] }, { type:'spring', stiffness:520, damping:22 });
-    why.textContent='Waiting at the proxy. Row unchanged.'; animate(why,{opacity:[0,1]},{duration:.3});
+    why.textContent='Waiting at FaultWall. Nothing sent yet.'; animate(why,{opacity:[0,1]},{duration:.3});
     const pulse = animate(ring, { opacity:[.9,0], scale:[.7,1.9] }, { duration:1.1, repeat:Infinity, ease:'easeOut' });
     await sleep(1500);
     $('#rv-what').textContent = 'Waiting for review'; $('#rv-what').style.color = COLOR.hold; $('#rv-who').textContent = '';

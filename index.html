@@ -143,6 +143,21 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
 .close{text-align:center}
 .close h2,.close p{margin-left:auto;margin-right:auto}
 .close .ctas{justify-content:center}
+.pricing{border-top:1px solid var(--rule);padding:64px 0 70px}
+.plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:40px}
+.plan{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:30px 30px 28px;display:flex;flex-direction:column}
+.plan.paid{border-color:var(--green);box-shadow:0 18px 40px -28px rgba(36,55,36,.3)}
+.plan .pk{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.plan h3{font-family:var(--serif);font-weight:400;font-size:28px;letter-spacing:-.02em;margin-top:10px}
+.plan .price{font-family:var(--serif);font-size:44px;line-height:1;letter-spacing:-.03em;margin-top:16px;color:var(--green)}
+.plan .lead{font-size:15px;line-height:1.65;color:var(--muted);margin-top:14px;max-width:30em}
+.plan ul{list-style:none;margin-top:18px}
+.plan li{position:relative;padding-left:22px;font-size:14.5px;line-height:1.6;margin-top:8px}
+.plan li::before{content:"";position:absolute;left:2px;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--green)}
+.plan .go{margin-top:auto;padding-top:26px}
+.pricing .small{margin-top:22px}
+@media(max-width:900px){.plans{grid-template-columns:minmax(0,1fr)}.plan{padding:26px 22px 24px}}
+
 /* motion: hidden only when JS motion is running */
 .mo .rv{opacity:0}
 
@@ -187,6 +202,7 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
     <a class="brand" href="/">faultwall</a>
     <nav>
       <a class="hide-s" href="/how-it-works.html">How it works</a>
+      <a class="hide-s" href="#pricing">Pricing</a>
       <a class="hide-s" href="https://github.com/shreyasXV/faultwall">GitHub</a>
       <a class="login" href="https://app.faultwall.com/">Log in</a>
       <a class="talk" href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com">Talk to us</a>
@@ -256,6 +272,38 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
         </div>
         <button class="again" id="ag" type="button" hidden>Replay example</button>
       </div>
+    </section>
+
+    <section class="pricing" id="pricing" aria-labelledby="pr-t">
+      <p class="sec-k rv">Pricing</p>
+      <h2 id="pr-t" class="rv">Monitoring is free. Enforcement is paid.</h2>
+      <div class="plans">
+        <div class="plan rv">
+          <p class="pk">Watch only</p>
+          <h3>Monitoring</h3>
+          <p class="price">Free</p>
+          <p class="lead">Run FaultWall in watch-only mode and see what your agents actually do. Nothing is stopped or slowed down.</p>
+          <ul>
+            <li>Every statement each agent runs, logged by agent</li>
+            <li>What your rules would have blocked or held, before you turn anything on</li>
+            <li>Statement text stays on your servers</li>
+          </ul>
+          <div class="go"><a class="sublink" href="https://app.faultwall.com/">Start monitoring <span class="ar" aria-hidden="true">&rarr;</span></a></div>
+        </div>
+        <div class="plan paid rv">
+          <p class="pk">Watch and act</p>
+          <h3>Enforcement</h3>
+          <p class="price">Paid</p>
+          <p class="lead">Turn the same rules on. FaultWall acts on each statement before it reaches your database.</p>
+          <ul>
+            <li>Blocks what your rules forbid, so it never reaches Postgres</li>
+            <li>Holds the writes you pick until someone on your team approves them</li>
+            <li>Everything in Monitoring</li>
+          </ul>
+          <div class="go"><a class="btn" href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com?subject=FaultWall%20enforcement%20pricing">Talk to us about pricing <span class="ar" aria-hidden="true">&rarr;</span></a></div>
+        </div>
+      </div>
+      <p class="small rv">Moving from monitoring to enforcement is one setting. Your rules stay the same.</p>
     </section>
 
     <section class="close">

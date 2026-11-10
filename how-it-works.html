@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How FaultWall works</title>
-<meta name="description" content="Technical details: where the FaultWall proxy runs, how agents connect, what happens to each statement, and what is live today.">
+<title>How FaultWall works: between AI agents and your APIs, MCP servers and databases</title>
+<meta name="description" content="Where FaultWall runs, how agents reach APIs and MCP servers through the gateway, and Postgres through FaultWall's Postgres proxy, what happens to each call, and what is built, in the pilot, and next.">
 <link rel="icon" href="/favicon.png">
 <link rel="canonical" href="https://faultwall.com/how-it-works.html">
 <meta property="og:title" content="How FaultWall works">
-<meta property="og:description" content="Where the FaultWall proxy runs, how agents connect, what happens to each statement, and what's live today.">
+<meta property="og:description" content="FaultWall sits between AI agents and the APIs, MCP servers and databases they use. Where it runs, how agents connect, what happens to each call, and what's built, in the pilot, and next.">
 <meta property="og:url" content="https://faultwall.com/how-it-works.html">
 <meta property="og:image" content="https://faultwall.com/og-breach.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -42,7 +42,7 @@ code{white-space:nowrap;font-family:var(--mono);font-size:.9em;background:var(--
 .top{display:grid;grid-template-columns:1fr 260px;gap:60px;padding:64px 0 40px}
 .crumb{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .crumb a{color:var(--muted);border-bottom:1px solid var(--rule)}
-h1{font-family:var(--serif);font-weight:400;font-size:clamp(40px,5vw,60px);line-height:1.05;letter-spacing:-.045em;margin-top:22px}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(40px,5vw,60px);line-height:1.05;letter-spacing:-.045em;margin-top:22px;text-wrap:balance}
 .lede{font-size:18px;line-height:1.65;color:var(--muted);margin-top:22px;max-width:34em}
 .toc{align-self:center;border-left:1px solid var(--rule);padding-left:22px;font-size:13.5px;list-style:none}
 .toc li{padding:5px 0}
@@ -56,38 +56,52 @@ h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,3.3vw,38px);lin
 
 /* architecture */
 .arch{margin-top:38px;background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:34px 32px 28px;position:relative}
-.net{border:1.5px dashed #c4c9bd;border-radius:6px;padding:40px 28px 34px;position:relative}
+.lane{display:grid;grid-template-columns:minmax(0,1fr) 118px minmax(0,1.25fr) 128px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;position:relative;padding:40px 24px 0}
+.net{grid-column:1/4;grid-row:1;align-self:stretch;margin:-34px -22px;border:1.5px dashed #c4c9bd;border-radius:6px;position:relative;z-index:0}
 .net-k{position:absolute;top:-10px;left:20px;background:var(--card);padding:0 10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--ink);font-weight:600}
-.lane{display:grid;grid-template-columns:1fr 1.5fr 1fr;align-items:center;gap:0;position:relative}
 .bx{border:1px solid var(--rule);border-radius:4px;background:var(--paper);padding:16px 18px;position:relative;z-index:2}
 .bx b{display:block;font-size:15px}
 .bx span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5}
 .bx.px{background:var(--green);border-color:var(--green);color:#fff}
 .bx.px span{color:#d5e3d8}
-.wire{position:absolute;top:50%;height:1px;background:var(--rule);z-index:1}
-.wire.w1{left:calc(33.3% - 4px);width:calc(4px + 0px)}
-.lane .gap{display:none}
+#b1{grid-column:1;grid-row:1}
+#b2{grid-column:3;grid-row:1}
+.tg{grid-column:5;grid-row:1;display:flex;flex-direction:column;gap:12px;position:relative;z-index:2}
+.tg .bx{padding:12px 16px}
 .links{position:absolute;inset:0;pointer-events:none;z-index:1}
-.wl{position:absolute;top:50%;height:1.5px;background:#a9b0a3}
+.wl,.hl{position:absolute;height:1.5px;margin-top:-.75px;background:#a9b0a3}
 .wl::after{content:'';position:absolute;right:-1px;top:-4px;border-left:7px solid #a9b0a3;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent}
-.wl small{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
-.pk{position:absolute;top:calc(50% - 4px);width:9px;height:9px;border-radius:50%;background:var(--green);opacity:0}
-.down{display:flex;flex-direction:column;align-items:center;margin-top:-1px;position:relative}
-.vl{width:2px;height:78px;background:var(--green);position:relative}
+.wl small,.hl small{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;background:var(--card);padding:0 4px}
+.vb{position:absolute;width:1.5px;margin-left:-.75px;background:#a9b0a3}
+.pk{position:absolute;top:0;left:0;width:9px;height:9px;border-radius:50%;background:var(--green);opacity:0}
+.down{grid-column:2/5;grid-row:2;display:flex;flex-direction:column;align-items:center;position:relative;margin-top:34px}
+.vl{width:2px;height:64px;background:var(--green);position:relative}
 .vl::after{content:'';position:absolute;bottom:-1px;left:-4px;border-top:8px solid var(--green);border-left:5px solid transparent;border-right:5px solid transparent}
-.vl-k{position:absolute;top:26px;left:calc(50% + 16px);font-family:var(--mono);font-size:11.5px;color:var(--green);white-space:nowrap;padding:2px 0}
+.vl-k{position:absolute;top:18px;left:calc(50% + 16px);font-family:var(--mono);font-size:11.5px;color:var(--green);white-space:nowrap;padding:2px 0}
 .app{width:min(460px,100%);margin-top:2px}
-.notes{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:26px;border-top:1px solid var(--rule-2)}
+.bx .pill{display:inline-block;margin:0 0 0 8px;vertical-align:2px;color:#7a520c}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:30px;border-top:1px solid var(--rule-2)}
 .notes div{padding:20px 22px 0 0}
 .notes div + div{padding-left:22px;border-left:1px solid var(--rule-2)}
 .notes h4{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--green);font-weight:600}
+.notes h4 em{font-style:normal;color:#7a520c}
 .notes p{font-size:14.5px;line-height:1.65;color:var(--muted);margin-top:8px}
+/* the Postgres path: FaultWall's Postgres proxy, not the gateway */
+.pgp{margin-top:34px;padding-top:22px;border-top:1px solid var(--rule-2)}
+.pgp h4{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--green);font-weight:600}
+.pgp > p{font-size:14.5px;line-height:1.65;color:var(--muted);margin-top:8px;max-width:52em}
+.pgp-net{margin:34px 2px 0;border:1.5px dashed #c4c9bd;border-radius:6px;position:relative;padding:30px 20.5px}
+.pgp-row{display:grid;grid-template-columns:minmax(0,1fr) 118px minmax(0,1.25fr) 128px minmax(0,1fr);align-items:center}
+.pw{height:1.5px;background:#a9b0a3;position:relative}
+.pw::after{content:'';position:absolute;right:-1px;top:-4px;border-left:7px solid #a9b0a3;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent}
+.pw small{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;background:var(--card);padding:0 4px}
 
 /* connect */
 .two{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:36px;align-items:start}
 .term{background:#1f2620;color:#e6ece6;border-radius:6px;font-family:var(--mono);font-size:12px;line-height:1.75;overflow:hidden}
-.term .bar{display:flex;gap:6px;padding:11px 14px;border-bottom:1px solid #313a32}
+.term .bar{display:flex;gap:6px;align-items:center;padding:11px 14px;border-bottom:1px solid #313a32}
 .term .bar i{width:9px;height:9px;border-radius:50%;background:#56615a}
+.term .bar .tl{margin-left:auto;font-size:11px;line-height:1;color:#a3b0a4;letter-spacing:.02em}
 .term pre{padding:16px 18px 18px;white-space:pre;overflow-x:auto}
 .term .c{color:#a3b0a4}
 .term .g{color:#9fd8ae}
@@ -104,26 +118,29 @@ h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,3.3vw,38px);lin
 .tabs{display:flex;gap:6px;margin-top:34px;flex-wrap:wrap;position:relative}
 .tab{border:1px solid #c4c9bd;background:transparent;border-radius:3px;padding:9px 14px;font-family:var(--mono);font-size:12px;color:var(--ink);position:relative;z-index:1}
 .tab[aria-selected=true]{color:#fff;border-color:transparent}
+html:not(.mo) .tab[aria-selected=true]{background:var(--ink)}
 .tab-bg{position:absolute;top:0;left:0;height:100%;background:var(--ink);border-radius:3px;z-index:0}
 .panel{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;margin-top:22px;align-items:start}
-.panel .term{min-height:200px}
+.panel .term{min-height:260px}
 .panel-copy h3{font-family:var(--serif);font-weight:400;font-size:26px;letter-spacing:-.02em}
 .panel-copy p{font-size:15px;line-height:1.7;color:var(--muted);margin-top:12px}
 .panel-copy .proof{font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--muted);margin-top:18px;padding-top:14px;border-top:1px solid var(--rule-2)}
 
-/* live / next */
-.ln{display:grid;grid-template-columns:1fr 1fr;margin-top:36px;border:1px solid var(--rule);border-radius:6px;background:var(--card);overflow:hidden}
-.ln > div{padding:28px 30px 30px}
+/* live / pilot / next */
+.ln{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:36px;border:1px solid var(--rule);border-radius:6px;background:var(--card);overflow:hidden}
+.ln > div{padding:28px 28px 30px}
 .ln > div + div{border-left:1px solid var(--rule)}
-.ln h4{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;font-weight:600}
+.ln h4{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;font-weight:600;line-height:1.5;text-wrap:balance}
 .ln .live h4{color:var(--green)}
-.ln .next h4{color:#7a520c}
+.ln .pilot h4{color:#7a520c}
+.ln .next h4{color:var(--muted)}
 .ln ul{list-style:none;margin-top:16px}
 .ln li{font-size:14.5px;line-height:1.55;color:var(--muted);padding:9px 0 9px 20px;border-top:1px solid var(--rule-2);position:relative}
 .ln li:first-child{border-top:0}
 .ln li::before{position:absolute;left:0;top:9px;font-family:var(--mono);font-size:12px}
 .ln .live li::before{content:'+';color:var(--green)}
-.ln .next li::before{content:'\25CB';color:var(--amber);font-size:10px;top:11px}
+.ln .pilot li::before{content:'\25CB';color:var(--amber);font-size:10px;top:11px}
+.ln .next li::before{content:'\2013';color:var(--faint)}
 .ln b{color:var(--ink);font-weight:600}
 
 /* building */
@@ -179,29 +196,41 @@ footer nav{display:flex;gap:14px 22px;flex-wrap:wrap} footer a:hover{color:var(-
   .toc{border-left:0;padding-left:0;border-top:1px solid var(--rule);padding-top:16px}
   .two,.panel{grid-template-columns:minmax(0,1fr);gap:28px}
   .close{flex-direction:column;align-items:flex-start}
+  .lane,.pgp-row{grid-template-columns:minmax(0,1fr) 72px minmax(0,1.25fr) 90px minmax(0,1fr)}
+  .wl small,.hl small,.pw small{display:none}
+  .notes,.ln{grid-template-columns:minmax(0,1fr)}
+  .notes div{padding-right:0}
+  .notes div + div{border-left:0;padding-left:0}
+  .ln > div + div{border-left:0;border-top:1px solid var(--rule)}
 }
 @media(max-width:700px){
   .arch{padding:26px 16px 22px}
-  .net{padding:30px 14px 22px}
-  .lane{grid-template-columns:1fr;gap:34px}
+  .lane{grid-template-columns:minmax(0,1fr);row-gap:52px;padding:30px 10px 0}
+  .net{grid-column:1;grid-row:1/3;margin:-22px -8px}
+  #b1{grid-column:1;grid-row:1}
+  #b2{grid-column:1;grid-row:2}
+  .tg{grid-column:1;grid-row:3}
+  .down{grid-column:1;grid-row:4;margin-top:0}
   .links{display:none}
-  #b2{margin:0!important}
-  .lane .bx + .bx::before{content:'postgres wire';position:absolute;top:-25px;left:30px;font-family:var(--mono);font-size:11px;color:var(--muted)}
-  .lane .bx + .bx::after{content:'';position:absolute;top:-34px;left:18px;width:1.5px;height:34px;background:#a9b0a3}
-  .vl-k{position:static;white-space:normal;text-align:center;margin:8px 0 10px}
+  #b2::before,.tg::before{content:'';position:absolute;top:-52px;left:24px;width:1.5px;height:52px;background:#a9b0a3}
+  #b2::after,.tg::after{position:absolute;left:36px;font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+  #b2::after{content:'FaultWall key';top:-33px}
+  .tg::after{content:'real keys';top:-24px}
+  .vl-k{position:static;white-space:normal;text-align:center;margin:0 0 8px;order:-1}
   .down .vl{height:34px}
-  .down{flex-direction:column}
-  .notes,.ln,.bld{grid-template-columns:minmax(0,1fr)}
+  .pgp-net{margin:30px 0 0;padding:26px 10px 22px}
+  .pgp-row{grid-template-columns:minmax(0,1fr)}
+  .pw{width:1.5px;height:52px;margin-left:24px}
+  .pw::after{display:none}
+  .pw small{display:block;top:50%;left:12px;transform:translateY(-50%);background:none;padding:0}
+  .bld{grid-template-columns:minmax(0,1fr)}
   .bc{padding:22px 18px}
   .viz .vr,.viz .tgt{grid-template-columns:76px 1fr 50px}
   .viz .vd{flex-direction:column;gap:4px}
   .kz .lv{flex-direction:column;gap:2px}
   .bc-top{flex-direction:column;align-items:flex-start;gap:10px}
-  .notes code{white-space:normal}
+  code{white-space:normal;overflow-wrap:anywhere}
   .term pre{white-space:pre-wrap;overflow-wrap:anywhere}
-  .notes div{padding-right:0}
-  .notes div + div{border-left:0;padding-left:0}
-  .ln > div + div{border-left:0;border-top:1px solid var(--rule)}
   .hdr nav .hide-s{display:none}
   .q button{font-size:18px}
 }
@@ -224,14 +253,14 @@ footer nav{display:flex;gap:14px 22px;flex-wrap:wrap} footer a:hover{color:var(-
   <section class="top">
     <div>
       <p class="crumb rv"><a href="/">faultwall</a> &nbsp;/&nbsp; how it works</p>
-      <h1 class="rv">How FaultWall sits between your agents and Postgres.</h1>
-      <p class="lede rv">A proxy runs in your network and speaks the Postgres wire protocol. Agents connect to it with their own key instead of the database password. It applies the rules you set in the FaultWall app to the statements routed through it.</p>
+      <h1 class="rv">How FaultWall sits between your agents and their APIs, MCP servers and databases.</h1>
+      <p class="lede rv">A gateway runs next to your agent and holds the real keys for its APIs and MCP servers. For Postgres, FaultWall's Postgres proxy holds the database login. The agent uses a FaultWall key instead of the real one, and each call is checked against your rules, then allowed, blocked, or held for someone on your team.</p>
     </div>
     <ol class="toc rv">
       <li><a href="#where"><span class="n">01</span>Where it runs</a></li>
       <li><a href="#connect"><span class="n">02</span>Connecting an agent</a></li>
-      <li><a href="#decisions"><span class="n">03</span>What happens to a statement</a></li>
-      <li><a href="#live"><span class="n">04</span>Live today, and next</a></li>
+      <li><a href="#decisions"><span class="n">03</span>What happens to a call</a></li>
+      <li><a href="#live"><span class="n">04</span>Built, in the pilot, and next</a></li>
       <li><a href="#building"><span class="n">05</span>What we're building</a></li>
       <li><a href="#faq"><span class="n">06</span>Fair questions</a></li>
     </ol>
@@ -239,61 +268,89 @@ footer nav{display:flex;gap:14px 22px;flex-wrap:wrap} footer a:hover{color:var(-
 
   <section class="sec" id="where">
     <p class="sec-k rv">01 &nbsp;Where it runs</p>
-    <h2 class="rv">Database traffic stays in your network.</h2>
-    <p class="d rv">You run the proxy next to your database. The FaultWall app holds agents, keys, rules and decisions. The two talk over a single outbound HTTPS connection that the proxy opens.</p>
+    <h2 class="rv">It runs next to your agent, and keeps the real keys.</h2>
+    <p class="d rv">The gateway runs on the same server as your agent, or in the same pod. It listens only on that machine. The real keys stay with the gateway, and the agent gets a FaultWall key.</p>
     <div class="arch rv">
-      <div class="net">
-        <span class="net-k">YOUR NETWORK</span>
-        <div class="lane" id="lane">
-          <div class="bx" id="b1"><b>AI agent</b><span>connects with its own key</span></div>
-          <div class="bx px" id="b2" style="margin:0 118px"><b>FaultWall proxy</b><span>checks rules, holds selected writes, blocks the rest</span></div>
-          <div class="bx" id="b3"><b>Postgres</b><span>proxy holds the real password</span></div>
-          <div class="links" aria-hidden="true">
-            <div class="wl" id="wl1"><small>postgres wire</small></div>
-            <div class="wl" id="wl2"><small>postgres wire</small></div>
-            <div class="pk" id="pk"></div>
+      <div class="lane" id="lane">
+        <div class="net" aria-hidden="true"><span class="net-k">YOUR SERVER OR POD</span></div>
+        <div class="bx" id="b1"><b>AI agent</b><span>holds only its FaultWall key</span></div>
+        <div class="bx px" id="b2"><b>FaultWall gateway</b><span>checks every call against your rules, holds the real keys</span></div>
+        <div class="tg" id="tg">
+          <div class="bx" id="t1"><b>APIs</b><span>one base URL each, like /stripe</span></div>
+          <div class="bx" id="t2"><b>MCP servers</b><span>over HTTP, or stdio servers it starts</span></div>
+        </div>
+        <div class="links" aria-hidden="true">
+          <div class="wl" id="wl1"><small>FaultWall key</small></div>
+          <div class="hl" id="stub"><small>real keys</small></div>
+          <div class="vb" id="bus"></div>
+          <div class="wl" id="br1"></div>
+          <div class="wl" id="br2"></div>
+          <div class="pk" id="pk"></div>
+        </div>
+        <div class="down" id="down">
+          <div class="vl"></div><span class="vl-k">outbound HTTPS, opened by the gateway</span>
+          <div class="bx app"><b>FaultWall website<span class="pill">IN PILOT</span></b><span>company rules, exec and engineer dashboards, which calls are waiting</span></div>
+        </div>
+      </div>
+      <div class="pgp">
+        <h4>POSTGRES PATH &middot; LIVE TODAY</h4>
+        <p>Postgres doesn't go through the gateway. Agents connect to FaultWall's Postgres proxy (<code>faultwall --proxy</code>), which you run in your network. It holds the database login, so agents never see it, and it applies your rules to every statement.</p>
+        <div class="pgp-net"><span class="net-k">YOUR NETWORK</span>
+          <div class="pgp-row">
+            <div class="bx"><b>AI agent</b><span>connects with its FaultWall key</span></div>
+            <div class="pw" aria-hidden="true"><small>FaultWall key</small></div>
+            <div class="bx px"><b>FaultWall Postgres proxy</b><span>checks every query against your rules, holds the database login</span></div>
+            <div class="pw" aria-hidden="true"><small>its own login</small></div>
+            <div class="bx"><b>Postgres</b><span>the agent never holds its password</span></div>
           </div>
         </div>
       </div>
-      <div class="down" aria-hidden="false">
-        <div class="vl"></div><span class="vl-k">outbound HTTPS, opened by the proxy</span>
-        <div class="bx app"><b>FaultWall app</b><span>agents, keys, write rules, approvals, activity</span></div>
-      </div>
       <div class="notes">
-        <div><h4>DATABASE PATH</h4><p>Agent to proxy to Postgres. Both connections stay inside your network. Your agent code doesn't change, only its connection string.</p></div>
-        <div><h4>CONTROL PATH</h4><p>The proxy pulls rules and sends held writes for review. In v0.7.0 reviewers see the statement shape, like <code>UPDATE orders SET status = ? WHERE id = ?</code>, not the values.</p></div>
+        <div><h4>CALL PATH</h4><p>Agent to gateway to service. Your agent code changes only where it sends calls and the key it sends, plus a retry for a held call that's approved after the wait. Run the gateway as its own OS user, so the agent can't read the real keys.</p></div>
+        <div><h4>CONTROL PATH <em>&middot; IN PILOT</em></h4><p>Company rules come down about every 30 seconds and, by default, can only make the gateway's own rules stricter. Literal-free stats go up, like <code>POST /v1/refunds</code> held, then approved. No keys, no argument values. Leave it off and nothing leaves the box.</p></div>
+        <div><h4>APPROVALS</h4><p>A held API or MCP call is approved on the gateway's own approval page, where the approver sees its values. That page is on the gateway's machine, or behind your own proxy or VPN. For those calls the website shows that a call is waiting and who to ask, and has no approve button. The Postgres proxy's held writes are approved on your side too, through the proxy's approval API.</p></div>
       </div>
     </div>
   </section>
 
   <section class="sec" id="connect">
     <p class="sec-k rv">02 &nbsp;Connecting an agent</p>
-    <h2 class="rv">Swap one connection string.</h2>
+    <h2 class="rv">Point the agent at FaultWall. Give it a FaultWall key.</h2>
     <div class="two">
-      <div class="term rv" aria-label="Example connection strings">
+      <div class="term rv" aria-label="Example connections for an API, an MCP server and Postgres">
         <div class="bar"><i></i><i></i><i></i></div>
-<pre><span class="c"># before: the agent holds the database password</span>
+<pre><span class="c"># API: same call, the gateway's base URL, a FaultWall key</span>
+<span class="del">curl https://api.stripe.com/v1/charges -u &lt;stripe-key&gt;:</span>
+curl http://127.0.0.1:8443/<span class="g">stripe</span>/v1/charges -u <span class="y">&lt;agent-key&gt;</span>:
+
+<span class="c"># MCP over HTTP: the client talks to the gateway</span>
+http://127.0.0.1:8444/mcp/<span class="g">&lt;server&gt;</span>
+Authorization: Bearer <span class="y">&lt;agent-key&gt;</span>
+
+<span class="c"># MCP over stdio: launch mcp-wrap where the server went</span>
+"command": "/usr/local/bin/faultwall",
+"args": ["mcp-wrap", "--server", "<span class="g">fs</span>",
+         "--socket", "/run/faultwall/mcp.sock"],
+"env": {"FAULTWALL_AGENT_KEY": "<span class="y">&lt;agent-key&gt;</span>"}
+
+<span class="c"># Postgres: swap one connection string, to the proxy</span>
 <span class="del">postgres://app_user:&lt;db-password&gt;@db.internal/orders</span>
-
-<span class="c"># after: the agent holds only its FaultWall key</span>
-postgres://<span class="g">support-agent</span>:<span class="y">&lt;agent-key&gt;</span>@fw-proxy/orders
-
-<span class="c"># check what each agent's DB user can do today</span>
-<span class="g">$</span> faultwall audit --fix</pre>
+postgres://<span class="g">support-agent</span>:<span class="y">&lt;agent-key&gt;</span>@fw-proxy/orders</pre>
       </div>
       <ol class="list">
-        <li class="rv"><span><b>Create the agent in the app.</b> You get a key, shown once. Revoke it any time and the proxy refuses the next connection.</span></li>
-        <li class="rv"><span><b>Set its write rules.</b> Allow, block, or hold for review, per agent.</span></li>
-        <li class="rv"><span><b>Point the agent at the proxy.</b> Tested with psycopg2, psycopg3, SQLAlchemy, asyncpg and node-postgres. JDBC is not tested yet.</span></li>
-        <li class="rv"><span><b>Tighten the database side too.</b> <code>faultwall audit --fix</code> generates the native Postgres privileges for each agent and lists the rules Postgres can't enforce on its own.</span></li>
+        <li class="rv"><span><b>Mint a key on the gateway.</b> <code>faultwall gateway keys add --agent billing-bot</code> shows it once. Only its hash goes in policies.yaml. Postgres agents connect to the proxy with their own key instead of the database password.</span></li>
+        <li class="rv"><span><b>Give it rules for each service.</b> Allow, block, or hold for a person, per agent and per API, MCP server or database. The real keys stay with FaultWall (the gateway, or for Postgres the proxy), never in the agent's config.</span></li>
+        <li class="rv"><span><b>Point the agent at FaultWall.</b> The FaultWall key goes where the provider key went, so its SDK, MCP client or Postgres driver needs no code change. Postgres is tested with psql, pgx, psycopg 2 and 3, SQLAlchemy, asyncpg and node-postgres. If a call you hold is approved after the wait, the agent sends the same call again. With Stripe's SDKs, send a stable Idempotency-Key or turn off automatic retries, or each retry is held as a new call.</span></li>
+        <li class="rv"><span><b>Watch first.</b> Start with <code>--mode monitor</code>: calls your rules would block or hold go through and are logged. Unknown keys are still refused, and on the gateway so are agents with no grant. Watch-only monitoring is free.</span></li>
+        <li class="rv"><span><b>Revoke on the gateway.</b> Remove the key from policies.yaml and reload. Its open MCP sessions and its calls in flight end at once.</span></li>
       </ol>
     </div>
   </section>
 
   <section class="sec" id="decisions">
-    <p class="sec-k rv">03 &nbsp;What happens to a statement</p>
-    <h2 class="rv">Five outcomes, all from our v0.7.0 test run.</h2>
-    <p class="d rv">Each result below was checked with a direct read of Postgres, so "unchanged" means the row really didn't change. Synthetic database.</p>
+    <p class="sec-k rv">03 &nbsp;What happens to a call</p>
+    <h2 class="rv">Five outcomes, from our test runs.</h2>
+    <p class="d rv">Four come from our end-to-end pilot run: two gateways, Stripe's simulator, a Zendesk stand-in and the reference MCP file server, with scripted agents. The revoked key is the classic Postgres proxy, live today. Synthetic data.</p>
     <div class="tabs rv" role="tablist" id="tabs">
       <span class="tab-bg" id="tabbg"></span>
       <button class="tab" role="tab" aria-selected="true" data-i="0">ALLOW</button>
@@ -303,38 +360,51 @@ postgres://<span class="g">support-agent</span>:<span class="y">&lt;agent-key&gt
       <button class="tab" role="tab" aria-selected="false" data-i="4">REVOKED KEY</button>
     </div>
     <div class="panel rv">
-      <div class="term"><div class="bar"><i></i><i></i><i></i></div><pre id="pterm"></pre></div>
+      <div class="term"><div class="bar"><i></i><i></i><i></i><span class="tl" id="ptl"></span></div><pre id="pterm"></pre></div>
       <div class="panel-copy"><h3 id="ph"></h3><p id="pp"></p><p class="proof" id="pf"></p></div>
     </div>
   </section>
 
   <section class="sec" id="live">
-    <p class="sec-k rv">04 &nbsp;Live today, and next</p>
-    <h2 class="rv">What you can use now, and what we're building with design partners.</h2>
+    <p class="sec-k rv">04 &nbsp;Built, in the pilot, and next</p>
+    <h2 class="rv">What's built, what's in the pilot, and what's next.</h2>
+    <p class="d rv">The gateway is a pilot, open to design partners. It isn't generally available yet. What is live today is the Postgres proxy, which you run in your network. The hosted app at app.faultwall.com shows its activity.</p>
     <div class="ln rv">
-      <div class="live"><h4>LIVE IN v0.7.0</h4><ul>
-        <li><b>Per-agent keys</b>, issued in the app, revocable</li>
-        <li><b>Write rules in the app</b>: allow, block, or hold for review</li>
-        <li><b>Held writes</b> wait at the proxy until approved or denied</li>
-        <li><b>Activity view</b> of what each agent ran and what was decided</li>
-        <li><b>Blocked operations</b> refused at the proxy</li>
-        <li><code>faultwall audit --fix</code> for native per-agent privileges</li>
+      <div class="live"><h4>LIVE TODAY</h4><ul>
+        <li><b>Postgres</b> through FaultWall's Postgres proxy. The proxy logs in to the database with its own login, so agents never hold the password</li>
+        <li><b>Rules</b> per agent: allow, block, or hold the writes you pick</li>
+        <li><b>Held writes</b> wait at the proxy until someone approves or denies them through the proxy's approval API. No decision in time means denied</li>
+        <li><code>faultwall audit --fix</code> for native per-agent Postgres privileges</li>
       </ul></div>
-      <div class="next"><h4>BUILDING WITH DESIGN PARTNERS</h4><ul>
-        <li><b>Shared policy</b> across org, database and agent, with versions and rollback</li>
-        <li><b>Approvals in Slack</b></li>
-        <li><b>Policy preview</b>: what a change would have blocked last week</li>
-        <li><b>Row limits</b> on held writes</li>
-        <li><b>Query world model</b>: warns before a query slows production. <a href="#building" style="border-bottom:1px solid var(--rule)">Details</a></li>
-        <li><b>eBPF visibility</b> inside Postgres, including access that skips the proxy. <a href="#building" style="border-bottom:1px solid var(--rule)">Details</a></li>
+      <div class="pilot"><h4>IN THE PILOT &middot; BUILT AND TESTED END TO END</h4><ul>
+        <li><b>API calls</b> through one base URL per service, with the real key added at the gateway</li>
+        <li><b>MCP tool calls</b> over stdio, with servers the gateway runs itself (pilot run), and over HTTP (demo run, against a mock server)</li>
+        <li><b>Allow, block or hold</b> per agent and per service, plus hard limits no company rule can loosen</li>
+        <li><b>Approvals on the gateway</b>, good for one call, and checked again before it's sent</li>
+        <li><b>Keys minted on the gateway</b>. Removing one ends its open sessions</li>
+        <li><b>Watch-only mode</b>, <code>--mode monitor</code></li>
+        <li><b>Company rules</b> written once on the website and pulled by every gateway. By default they can only tighten</li>
+        <li><b>Exec dashboard</b>: what was blocked, what's waiting, which agents are covered</li>
+        <li><b>Engineer's page</b>: my agents, what they did, what was blocked and why</li>
+        <li><b>Waiting calls</b> shown with who approves, and a link to the gateway's approval page, which opens on the gateway's machine or behind your own proxy or VPN</li>
+        <li><b>Revoking a key from the website</b>, on every gateway at its next pull</li>
+        <li><b>Rule changes in seconds</b>: 6.4 s at the median, 14.5 s at most, in our pilot run on one machine</li>
+      </ul></div>
+      <div class="next"><h4>NEXT</h4><ul>
+        <li><b>Laptops</b>: a thin install on engineers' Macs. Claude Code and other agents get a short-lived FaultWall credential tied to the engineer's login, and their calls to company services go through your gateway. FaultWall puts no provider keys on laptops</li>
+        <li><b>Signed rule bundles</b>: your admin signs each version, and gateways check the signature before enforcing</li>
+        <li><b>Passkey approvals</b> on each approver's own device, bound to the one held call</li>
+        <li><b>Slack notifications</b> for waiting API and MCP calls. Slack passes them on; it can't approve them</li>
+        <li><b>Postgres in the pilot</b>, with its held writes approved on your side, like API and MCP calls</li>
       </ul></div>
     </div>
+    <p class="d rv">Later, in our pipeline: strict mode, OS-level enforcement designed so an agent can't route around it, using eBPF on Linux servers.</p>
   </section>
 
   <section class="sec" id="building">
     <p class="sec-k rv">05 &nbsp;What we're building</p>
-    <h2 class="rv">Two pieces past allow and deny, built with design partners.</h2>
-    <p class="d rv">Rules answer whether an agent may run a statement. These answer what it will do to the database, and what happens outside the proxy. We're building both with design partners on real workloads.</p>
+    <h2 class="rv">Two pieces past allow and block.</h2>
+    <p class="d rv">Rules answer whether an agent may make a call. These answer what a query will do to the database right now, and what happens outside FaultWall.</p>
     <div class="bld">
       <div class="bc rv">
         <div class="bc-top"><h3>Query world model</h3><span class="pill">SHADOW MODE</span></div>
@@ -350,22 +420,22 @@ postgres://<span class="g">support-agent</span>:<span class="y">&lt;agent-key&gt
           <div class="tgt"><span></span><span>target</span><span></span></div>
           <div class="vd"><span>SELECT ... FROM orders JOIN ...</span><span id="q3" style="color:var(--green)">ok</span></div>
         </div>
-        <p class="today"><b>Today:</b> the scorer is in the proxy in shadow mode. It scores and records, and never blocks. We're tuning it on real workloads before it acts on anything. Illustration above, not partner data.</p>
+        <p class="today"><b>Today:</b> the scorer runs in FaultWall's Postgres proxy in shadow mode. It scores and records, and never blocks. We'll tune it on real workloads before it acts on anything. API and MCP calls get a fixed risk class instead: a refund is money going out. Illustration above, not partner data.</p>
       </div>
       <div class="bc rv">
         <div class="bc-top"><h3>eBPF visibility</h3><span class="pill">PROTOTYPE</span></div>
-        <p class="qa">The proxy sees what goes through it. eBPF sees what Postgres actually runs.</p>
+        <p class="qa">The gateway sees what goes through it. eBPF sees what actually runs.</p>
         <ul>
           <li>Hooks Postgres query start and finish with USDT probes, below the application.</li>
           <li>Attributes CPU and disk I/O to each query using kernel scheduler and block I/O tracepoints.</li>
-          <li>Catches queries on connections that never touched the proxy.</li>
+          <li>Catches queries on connections that never went through FaultWall.</li>
         </ul>
         <div class="viz kz" aria-label="Where eBPF sits">
-          <div class="lv"><span>agent &rarr; faultwall proxy</span><i>sees routed traffic</i></div>
+          <div class="lv"><span>agent &rarr; faultwall gateway</span><i>sees routed calls</i></div>
           <div class="lv"><span>postgres</span><i>USDT probes</i></div>
           <div class="lv k"><span>linux kernel, eBPF</span><span>every query, cpu, i/o</span></div>
         </div>
-        <p class="today"><b>Today:</b> working prototype, not shipped. Needs self-managed Postgres on Linux; managed services like RDS don't allow kernel probes. Until then, <code>faultwall audit --fix</code> covers the bypass case with native Postgres privileges.</p>
+        <p class="today"><b>Today:</b> a working prototype for Postgres, not shipped. It needs self-managed Postgres on Linux; managed services like RDS don't allow kernel probes. Strict mode, in our pipeline, takes it to processes, files and network on Linux servers. Until then, <code>faultwall audit --fix</code> helps close the database bypass with native Postgres privileges.</p>
       </div>
     </div>
   </section>
@@ -374,10 +444,13 @@ postgres://<span class="g">support-agent</span>:<span class="y">&lt;agent-key&gt
     <p class="sec-k rv">06 &nbsp;Fair questions</p>
     <h2 class="rv">You may not need us. Here's how to tell.</h2>
     <div class="faq" id="faqs">
-      <div class="q rv"><button aria-expanded="false">We can build approval into our own tool layer.<i>+</i></button><div class="a"><p>You can, and some teams already run a shared approval service. FaultWall enforces at the Postgres connection, so you can apply controls without adding approval logic to each agent implementation.</p></div></div>
-      <div class="q rv"><button aria-expanded="false">Scoped read-only roles already work for us.<i>+</i></button><div class="a"><p>Then keep them. FaultWall becomes relevant when you need controlled writes, reviewable exceptions, or one consistent workflow across agents.</p></div></div>
-      <div class="q rv"><button aria-expanded="false">That's another component in production.<i>+</i></button><div class="a"><p>Yes. The proxy becomes part of the database path. So we start in staging and test compatibility, latency, failure behavior and recovery with your workload before you decide anything.</p></div></div>
-      <div class="q rv"><button aria-expanded="false">Will engineers end up reviewing SQL all day?<i>+</i></button><div class="a"><p>We measure approval volume and turnaround during the evaluation. A lot of repeat requests can mean a rule is too strict. Some sensitive operations should keep requiring review regardless.</p></div></div>
+      <div class="q rv"><button aria-expanded="false">Isn't this just an API gateway?<i>+</i></button><div class="a"><p>The proxying part is ordinary. What's on top is the point. FaultWall classes each call by what it does: a refund is money going out, a file move is destructive. Today that covers Stripe-style payments and file tools; other APIs are classed by method. A held call waits for a person, and an approval covers that one call only; sent again, it waits again. It covers MCP tool calls too, including stdio servers it runs itself, so, with the gateway as its own OS user, their credentials never run as the agent. And <code>faultwall suggest</code> reads what each agent actually did and proposes tighter rules. You apply them; it never edits your rules.</p></div></div>
+      <div class="q rv"><button aria-expanded="false">We can build approval into our own tool layer.<i>+</i></button><div class="a"><p>You can, and some teams already run a shared approval service. FaultWall enforces where calls leave for the API, the MCP server or the database, so you get one set of controls without adding approval logic to each agent.</p></div></div>
+      <div class="q rv"><button aria-expanded="false">Scoped keys and read-only roles already work for us.<i>+</i></button><div class="a"><p>Then keep them. FaultWall becomes relevant when you need controlled writes, reviewable exceptions, or one consistent workflow across agents and services.</p></div></div>
+      <div class="q rv"><button aria-expanded="false">That's another component in production.<i>+</i></button><div class="a"><p>Yes. The gateway becomes part of the path to every service it covers. So we start in staging, watch-only first, and test compatibility, latency, failure behavior and recovery with your workload before you decide anything.</p></div></div>
+      <div class="q rv"><button aria-expanded="false">What does it add to latency?<i>+</i></button><div class="a"><p>Measured on one machine over loopback, against local mock services and a local Postgres, on our MVP build of Nov 8. With one client, the median added time was 0.39 ms per API call, 0.10 ms per MCP call over HTTP, 0.16 ms over stdio and 0.10 ms per Postgres query. The 99th percentile was 2.3 ms per API call and under 0.5 ms for the others. With more clients at once it rose: 6.0 ms per API call with 16 clients, 1.0 ms over stdio and 0.7 ms per Postgres query with 4. The machine was busy, and the pilot build hasn't been measured yet. Real-network numbers come next.</p></div></div>
+      <div class="q rv"><button aria-expanded="false">What if FaultWall goes down?<i>+</i></button><div class="a"><p>If the gateway stops, the calls it protects stop too: the agent holds only a FaultWall key. Calls waiting for approval are denied when it shuts down cleanly. If the FaultWall website is unreachable, the gateway keeps enforcing the last company rules it checked, for as long as you allow, from 1 minute to 72 hours. Past that, calls under company rules are refused until it syncs again, and agents on local rules keep working. In our pilot run the website was down for a minute: a gateway set to one minute failed closed 60 seconds after its last good sync, then recovered by itself 10 seconds after the website came back, and no event was lost. Running the gateway highly available isn't built yet.</p></div></div>
+      <div class="q rv"><button aria-expanded="false">Will engineers review calls all day?<i>+</i></button><div class="a"><p>You pick which calls wait, such as refunds over $50. Everything else runs or is blocked by rule. During an evaluation we measure how many calls wait and how fast they're decided; a lot of repeats can mean a rule is too strict. Some operations should keep needing a person regardless. And one agent can have at most 16 calls waiting by default, so a looping agent can't bury your reviewers.</p></div></div>
     </div>
   </section>
 
@@ -385,64 +458,74 @@ postgres://<span class="g">support-agent</span>:<span class="y">&lt;agent-key&gt
     <div>
       <p class="sec-k rv">Work with us</p>
       <h2 class="rv">Bring us one workflow.</h2>
-      <p class="rv">We'll put it under limits your team agrees on, run it in staging, and give the owner the evidence to decide on production.</p>
+      <p class="rv">Tell us what your agent should be doing that it isn't allowed to do today. We'll put it under limits your team agrees on, run it in staging, and give the owner the evidence to decide on production.</p>
     </div>
     <a class="btn rv" href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com?subject=Evaluate%20one%20workflow">Evaluate a workflow with us <span class="ar" aria-hidden="true">&rarr;</span></a>
   </section>
 
   <footer>
-    <span>faultwall &nbsp;/&nbsp; built for Postgres</span>
+    <span>faultwall &nbsp;/&nbsp; for AI agents on APIs, MCP and databases</span>
     <nav><a href="/">Home</a><a href="https://github.com/shreyasXV/faultwall">GitHub</a><a href="https://twitter.com/FaultWall">X</a><a href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com">Contact Shreyas &amp; Soumya</a></nav>
   </footer>
 </div>
 
 <script>
 const PANELS = [
-  { t:'Permitted work runs.', p:"Reads and writes your rules allow go straight to Postgres. The agent doesn't know FaultWall is there.",
-    f:'Test: agent connects with its key and reads 3 rows.',
-    term:`<span class="c">agent&gt;</span> SELECT id, status FROM orders
-         WHERE id IN (1042, 1043, 1044);
+  { s:'api \u00b7 zendesk \u00b7 support-gw', t:'Permitted work runs.',
+    p:"Calls your rules allow go straight through. On the way out, the gateway swaps the agent's FaultWall key for the real one, so the service sees a normal call and the agent never holds the real key.",
+    f:'Pilot run: support-bot listed tickets through support-gw (200). The Zendesk stand-in got the real token, never the agent key.',
+    term:`<span class="c">support-bot&gt;</span> GET /api/v2/tickets
+             <span class="c">key: its FaultWall key</span>
 <span class="g">ALLOW</span>
- 1042 | shipped
- 1043 | processing
- 1044 | processing` },
-  { t:'Selected writes wait for a reviewer.', p:'The write is held at the proxy before it reaches Postgres. A reviewer approves it in the app, and only then does it run.',
-    f:'Test: row unchanged while waiting (direct read), then UPDATE 1 and order 1043 = refunded.',
-    term:`<span class="c">agent&gt;</span> UPDATE orders SET status = 'refunded'
-         WHERE id = 1043;
-<span class="y">HOLD</span>  waiting at the proxy
-<span class="c">reviewer sees:</span>
-  UPDATE orders SET status = ? WHERE id = ?
-<span class="g">APPROVED</span> by dana@acme.test
-UPDATE 1` },
-  { t:'A denial comes back with your reason.', p:"The agent gets a plain error saying the statement didn't run, so it can stop or ask for help instead of retrying blind.",
-    f:'Test: denied DELETE, row still there (direct read).',
-    term:`<span class="c">agent&gt;</span> DELETE FROM orders WHERE id = 1044;
-<span class="y">HOLD</span>  waiting at the proxy
-<span class="r">DENIED</span> by dana@acme.test
-<span class="r">ERROR</span> [BLOCKED by FaultWall] DELETE on orders
-  was held for approval and denied by
-  dana@acme.test: Deletes need a ticket.
-  It did not run.` },
-  { t:'Blocked operations never reach Postgres.', p:'Operations your rules block are refused at the proxy. Postgres never sees them.',
-    f:'Test: DROP TABLE refused at the proxy, decision in 0.03ms.',
-    term:`<span class="c">agent&gt;</span> DROP TABLE orders;
-<span class="r">ERROR</span> [BLOCKED by FaultWall]
-  blocked_operation (op: DROP)` },
-  { t:'Revoke a key, and the agent is out.', p:'Revoking the key in the app means the proxy refuses the next connection from that agent.',
-    f:'Test: revoked key refused at connect.',
-    term:`<span class="c">agent&gt;</span> connect fw-proxy/orders
-<span class="r">FATAL</span> [BLOCKED by FaultWall]
-  the key for agent "support-agent" was revoked` },
+<span class="c">to zendesk:</span>  the real token, added here
+200 OK` },
+  { s:'api \u00b7 stripe \u00b7 payments-gw', t:'Selected calls wait for a person.',
+    p:"The call is held at the gateway before it reaches the service. Someone on your team approves it on the gateway's own approval page, where they see its values. That page is on the gateway's machine, or behind your own proxy or VPN. If they decide within the wait (by default 20 seconds for an API call, 4 for an MCP call), it's sent at once. If not, the agent is told the call is held. Once it's approved, the agent sends the identical call again, and it goes through once. Sent again after that, it waits again.",
+    f:"Pilot run: a $90 refund held by refunds-over-50-usd. The test script approved it on payments-gw while the agent waited, and it was sent to Stripe's simulator (200). A $75 refund approved on support-gw after the wait went through when the agent sent it again (200).",
+    term:`<span class="c">billing-bot&gt;</span> POST /v1/refunds
+             amount: 9000  <span class="c">($90.00)</span>
+<span class="y">HOLD</span>      refunds-over-50-usd
+          waiting at payments-gw
+<span class="g">APPROVED</span>  by approver:alice-oncall
+200 OK    sent to stripe` },
+  { s:'api \u00b7 stripe \u00b7 support-gw', t:'A denial comes back with the reason.',
+    p:"The agent gets a plain error that says the call was held and denied, so it can stop or ask for help instead of retrying blind. Nothing reached the service.",
+    f:"Pilot run: a $120 refund held on support-gw and denied there. It was never sent to Stripe's simulator.",
+    term:`<span class="c">support-bot&gt;</span> POST /v1/refunds
+             amount: 12000  <span class="c">($120.00)</span>
+<span class="y">HOLD</span>    refunds-over-50-usd
+<span class="r">DENIED</span>  by approver:bob-oncall
+<span class="r">403</span> faultwall_blocked
+  [BLOCKED by FaultWall] request blocked by
+  policy (rule refunds-over-50-usd): denied
+  by approver:bob-oncall (hold_id ah_...):
+  &lt;their reason&gt;` },
+  { s:'mcp \u00b7 file server \u00b7 payments-gw', t:'Blocked calls never reach your systems.',
+    p:"Calls your rules block are refused at the gateway. An MCP client gets an error result the model can read. An API client gets a 403 its SDK can read.",
+    f:'Pilot run: this read was allowed under version 1 of the company rules. Once version 2 blocked the private folder, both gateways refused it.',
+    term:`<span class="c">billing-bot&gt;</span> tools/call read_text_file
+             path: sandbox/private/payroll.csv
+<span class="r">BLOCKED</span>  no-private-files
+         <span class="c">company rules, version 2</span>
+<span class="r">isError</span>  [BLOCKED by FaultWall] ...` },
+  { s:'postgres \u00b7 classic proxy', t:'Revoke a key, and the agent is out.',
+    p:"A revoked key is refused at the door. On the gateway, removing a key from policies.yaml and reloading also ends its open MCP sessions and calls in flight. On Postgres, the proxy refuses the key before it opens any connection to the database.",
+    f:"Classic Postgres proxy, live today: once the key is revoked on the Agents page, the next login fails with 28P01, and the agent's open sessions end at the proxy's next sync.",
+    term:`<span class="c">support-agent&gt;</span> connect fw-proxy/orders
+<span class="r">FATAL 28P01</span> [BLOCKED by FaultWall]
+  FaultWall: the key for agent "support-agent"
+  was revoked. Create a new key on the
+  Agents page.` },
 ];
 </script>
 <script>
 // Interactions that work without the motion library
 (() => {
   const tabs=[...document.querySelectorAll('.tab')];
+  const $=id=>document.getElementById(id);
   window.__fwShow = i => { const d=PANELS[i];
-    document.getElementById('pterm').innerHTML=d.term; document.getElementById('ph').textContent=d.t;
-    document.getElementById('pp').textContent=d.p; document.getElementById('pf').textContent=d.f;
+    $('pterm').innerHTML=d.term; $('ph').textContent=d.t; $('ptl').textContent=d.s;
+    $('pp').textContent=d.p; $('pf').textContent=d.f;
     tabs.forEach((t,j)=>t.setAttribute('aria-selected', j===i)); };
   window.__fwShow(0);
   tabs.forEach(t=>t.addEventListener('click',()=>{ window.__fwStopAuto && window.__fwStopAuto(); window.__fwSel(+t.dataset.i); }));
@@ -452,20 +535,40 @@ UPDATE 1` },
     q.classList.toggle('open',open); b.setAttribute('aria-expanded',open);
     if(window.__fwAcc) window.__fwAcc(a,open); else a.style.height=open?'auto':'0';
   }));
-  // draw wire lengths between the three boxes
+  // draw the wires: agent to gateway, gateway to each service, gateway down to the website
   function wires(){
-    const lane=document.getElementById('lane'); if(!lane) return;
-    const L=lane.getBoundingClientRect(), r1=b1.getBoundingClientRect(), r2=b2.getBoundingClientRect(), r3=b3.getBoundingClientRect();
-    Object.assign(wl1.style,{left:(r1.right-L.left)+'px',width:(r2.left-r1.right)+'px'});
-    Object.assign(wl2.style,{left:(r2.right-L.left)+'px',width:(r3.left-r2.right)+'px'});
-    window.__fwGeo={a:r1.right-L.left, b:r2.left-L.left, c:r2.right-L.left, d:r3.left-L.left};
+    const lane=$('lane'); if(!lane) return;
+    const vl=lane.querySelector('.down .vl'), net=lane.querySelector('.net'), down=$('down');
+    if(getComputedStyle(lane.querySelector('.links')).display==='none'){ [vl,net,down,lane].forEach(e=>e.removeAttribute('style')); window.__fwGeo=null; return; }
+    lane.style.paddingTop='0px';   // the room above is only for the stretched box drawn without this script
+    const L=lane.getBoundingClientRect(), r=id=>$(id).getBoundingClientRect();
+    const r1=r('b1'), r2=r('b2'), ts=['t1','t2'].map(r), row1=Math.max(r1.bottom,r2.bottom,r('tg').bottom);
+    const set=(id,s)=>{ const st=$(id).style; for(const k in s) st[k]=s[k]+'px'; };
+    // the dashed "your server" box wraps the agent and the gateway, 34px around them
+    const nt=Math.min(r1.top,r2.top)-34, nb=Math.max(r1.bottom,r2.bottom)+34;
+    Object.assign(net.style,{position:'absolute',gridColumn:'auto',gridRow:'auto',margin:'0',alignSelf:'auto',
+      left:(r1.left-22-L.left)+'px', top:(nt-L.top)+'px', width:(r2.right-r1.left+44)+'px', height:(nb-nt)+'px'});
+    down.style.marginTop=Math.max(8, nb-row1+20)+'px';
+    const cy=r2.top+r2.height/2-L.top, gx=r2.right-L.left;
+    const busX=gx+(ts[0].left-r2.right)*0.62;
+    const ys=ts.map(t=>t.top+t.height/2-L.top), ends=ts.map(t=>t.left-L.left);
+    set('wl1',{left:r1.right-L.left, top:cy, width:r2.left-r1.right});
+    set('stub',{left:gx, top:cy, width:busX-gx});
+    const top=Math.min(ys[0],cy), bot=Math.max(ys[ys.length-1],cy);
+    set('bus',{left:busX, top:top, height:bot-top});
+    ys.forEach((y,i)=>set('br'+(i+1),{left:busX, top:y, width:ends[i]-busX}));
+    const gap=Math.max(0, $('down').getBoundingClientRect().top-r2.bottom);
+    vl.style.marginTop=(-gap)+'px'; vl.style.height=(64+gap)+'px';
+    window.__fwGeo={a:r1.right-L.left, b:r2.left-L.left, c:gx, bus:busX, cy, ys, ends};
   }
-  wires(); addEventListener('resize',wires);
+  wires(); addEventListener('resize',wires); addEventListener('load',wires);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(wires);
 })();
 </script>
 <script type="module">
 import { animate, inView, stagger } from "https://cdn.jsdelivr.net/npm/motion@11.11.13/+esm";
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
 if (!reduce){
   document.documentElement.classList.add('mo');
   animate('.top .rv', { opacity:[0,1], y:[20,0] }, { duration:.8, delay:stagger(.1), ease:[.16,1,.3,1] });
@@ -488,25 +591,35 @@ if (!reduce){
   // FAQ accordion
   window.__fwAcc = (a, open) => { const h=a.scrollHeight; animate(a, { height: open?[0,h]:[a.offsetHeight,0] }, { duration:.4, ease:[.16,1,.3,1] }).then(()=>{ if(open) a.style.height='auto'; }); };
 
-  // packets moving through the architecture
+  // calls moving through the gateway to an API or an MCP server
   const pk = document.getElementById('pk');
-  const C = ['#315b40','#315b40','#946410','#9e3a2c'];
-  let k=0;
+  const GREEN='#315b40', AMBER='#946410', RED='#9e3a2c';
+  const KINDS = ['allow','allow','hold','block'];
+  let k=0, running=false;
   async function run(){
     while(true){
-      const g = window.__fwGeo; if(!g || getComputedStyle(document.querySelector('.links')).display==='none'){ await new Promise(r=>setTimeout(r,1500)); continue; }
-      const c = C[k++ % C.length]; pk.style.background=c;
-      await animate(pk, { x:[g.a-4, g.b-4], opacity:[0,1] }, { duration:.8, ease:[.45,0,.2,1] });
+      const g = window.__fwGeo; if(!g){ await sleep(1500); continue; }
+      const kind = KINDS[k % KINDS.length], ti = k % g.ys.length; k++;
+      const y0 = g.cy-4.5, yt = g.ys[ti]-4.5;
+      pk.style.background = kind==='block' ? RED : kind==='hold' ? AMBER : GREEN;
+      await animate(pk, { x:[g.a-4.5, g.b-4.5], y:[y0, y0], opacity:[0,1] }, { duration:.8, ease:[.45,0,.2,1] });
       await animate('#b2', { scale:[1,1.03,1] }, { duration:.35 });
-      if (c==='#9e3a2c'){ await animate(pk, { x:[g.b-4, g.b-24], opacity:[1,0] }, { duration:.5 }); }
-      else if (c==='#946410'){ await animate(pk, { opacity:[1,.35,1,.35,1] }, { duration:1.2 }); pk.style.background='#315b40'; await animate(pk, { x:[g.c-4, g.d-4] }, { duration:.8, ease:[.45,0,.2,1] }); await animate(pk,{opacity:0},{duration:.25}); }
-      else { await animate(pk, { x:[g.c-4, g.d-4] }, { duration:.8, ease:[.45,0,.2,1] }); await animate(pk,{opacity:0},{duration:.25}); }
-      await new Promise(r=>setTimeout(r,500));
+      if (kind==='block'){ await animate(pk, { x:[g.b-4.5, g.b-24], opacity:[1,0] }, { duration:.5 }); }
+      else {
+        if (kind==='hold'){ await animate(pk, { opacity:[1,.35,1,.35,1] }, { duration:1.2 }); pk.style.background=GREEN; }
+        await animate(pk, { x:[g.c-4.5, g.bus-4.5] }, { duration:.4, ease:'linear' });
+        if (Math.abs(yt-y0) > 1) await animate(pk, { y:[y0, yt] }, { duration:.3, ease:'linear' });
+        await animate(pk, { x:[g.bus-4.5, g.ends[ti]-4.5] }, { duration:.35, ease:[.2,0,.2,1] });
+        await animate(pk, { opacity:0 }, { duration:.25 });
+      }
+      await sleep(500);
     }
   }
-  inView('#where', () => { run(); }, { amount:.3 });
+  inView('#where', () => { if(!running){ running=true; run(); } }, { amount:.3 });
   // query world model illustration loop
+  let qwm=false;
   inView('#building', () => {
+    if (qwm) return; qwm=true;
     const q1=document.getElementById('q1'), q2=document.getElementById('q2'), n1=document.getElementById('q1n'), n2=document.getElementById('q2n'), v=document.getElementById('q3');
     const steps=[[.30,42,.25],[.62,78,.45],[.88,240,.92],[.45,55,.32]];
     let i=0;

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FaultWall: put your AI agents to work on your APIs, MCP tools and databases, and keep control</title>
-<meta name="description" content="FaultWall sits between your AI agents and the APIs, MCP servers and databases they use. Permitted work runs, risky calls are blocked, and the ones you pick wait for someone on your team. Monitoring is free.">
+<meta name="description" content="FaultWall sits between your AI agents and the APIs, MCP servers and databases they use. Permitted work runs, calls your rules forbid are blocked, and the ones you pick wait for someone on your team. Monitoring is free.">
 <link rel="icon" href="/favicon.png">
 <link rel="canonical" href="https://faultwall.com/">
 <meta property="og:title" content="FaultWall: put your AI agents to work on your APIs, MCP tools and databases, and keep control">
-<meta property="og:description" content="FaultWall sits between your AI agents and the APIs, MCP servers and databases they use. Permitted work runs, risky calls are blocked, and the ones you pick wait for someone on your team. Monitoring is free.">
+<meta property="og:description" content="FaultWall sits between your AI agents and the APIs, MCP servers and databases they use. Permitted work runs, calls your rules forbid are blocked, and the ones you pick wait for someone on your team. Monitoring is free.">
 <meta property="og:url" content="https://faultwall.com/">
 <meta property="og:image" content="https://faultwall.com/og-breach.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -214,7 +214,7 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
       <div>
         <p class="kicker rv">Control for AI agents on your APIs, MCP tools and databases</p>
         <h1 id="h1"><span class="w">Put</span> <span class="w">your</span> <span class="w">agents</span> <span class="w">to</span> <span class="w">work.</span><em><span class="w">Keep</span> <span class="w">control.</span></em></h1>
-        <p class="intro rv">FaultWall sits between your agents and every API, MCP server and database they touch. Permitted work runs. Risky calls are blocked, and the ones you pick wait for someone on your team. Your real keys stay with FaultWall, never with the agent.</p>
+        <p class="intro rv">FaultWall sits between your agents and every API, MCP server and database you route through it. Permitted work runs. Calls your rules forbid are blocked, and the ones you pick wait for someone on your team. Your real keys stay with FaultWall, never with the agent.</p>
         <div class="ctas rv">
           <a class="btn" href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com?subject=Evaluate%20one%20workflow">Evaluate a workflow with us <span class="ar" aria-hidden="true">&rarr;</span></a>
           <a class="sublink" href="/how-it-works.html">See how it works <span class="ar" aria-hidden="true">&rarr;</span></a>
@@ -233,7 +233,7 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
           <div class="dot" id="dot"></div>
         </div>
         <div class="log" id="log" aria-live="off"></div>
-        <div class="review" id="review"><span><span class="what" id="rv-what">Approved</span> <span class="who" id="rv-who">dana@acme.test</span></span><span class="who" id="rv-note">on your FaultWall approval page</span></div>
+        <div class="review" id="review"><span><span class="what" id="rv-what">Approved</span> <span class="who" id="rv-who">approver:alice-oncall</span></span><span class="who" id="rv-note">on your gateway</span></div>
         <div class="flow-foot">Calls and outcomes from our test runs against Stripe's mock server, an MCP file server and a test Postgres. Synthetic data.</div>
       </div>
     </section>
@@ -282,7 +282,7 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
           <p class="pk">Watch only</p>
           <h3>Monitoring</h3>
           <p class="price">Free</p>
-          <p class="lead">Run FaultWall in watch-only mode and see what your agents actually do. Nothing is stopped or slowed down.</p>
+          <p class="lead">Run FaultWall in watch-only mode and see what your agents actually do. Calls your rules would block or hold go through and are logged. Built-in safety checks, like refusing unknown keys, still apply.</p>
           <ul>
             <li>Every call each agent makes, to every API, MCP tool and database, logged by agent</li>
             <li>What your rules would have blocked or held, before you turn anything on</li>
@@ -303,7 +303,7 @@ main p.small{font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5
           <div class="go"><a class="btn" href="mailto:shreyas@tryfaultwall.com,soumya.sourav@tryfaultwall.com?subject=FaultWall%20enforcement%20pricing">Talk to us about pricing <span class="ar" aria-hidden="true">&rarr;</span></a></div>
         </div>
       </div>
-      <p class="small rv">Moving from monitoring to enforcement is one setting. Your rules stay the same.</p>
+      <p class="small rv">Moving from monitoring to enforcement is one setting and a restart. Your rules stay the same.</p>
     </section>
 
     <section class="close">
@@ -385,10 +385,10 @@ const log = $('#log'), dot = $('#dot'), ring = $('#ring'), review = $('#review')
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const SEQ = [
-  { sql:'stripe  GET /v1/charges', kind:'allow', tag:'ALLOW', why:'200 OK: 3 charges returned' },
-  { sql:'stripe  POST /v1/refunds  amount: $90.00', kind:'hold', tag:'HOLD', after:'APPROVED', why:'Waited at FaultWall for a reviewer. Then sent: 200 OK, refund created', who:'dana@acme.test', verdict:'Approved' },
-  { sql:'mcp  read_text_file  private/payroll.csv', kind:'block', tag:'BLOCKED', why:'Outside its allowed folders. Never reached the file server' },
-  { sql:'postgres  DELETE FROM orders WHERE id = ?', kind:'deny', tag:'HOLD', after:'DENIED', why:'Denied with a reason: "Deletes need a ticket." Row kept.', who:'dana@acme.test', verdict:'Denied' },
+  { sql:'stripe  GET /v1/charges', kind:'allow', tag:'ALLOW', why:'200 OK: charges listed' },
+  { sql:'stripe  POST /v1/refunds  amount: $90.00', kind:'hold', tag:'HOLD', after:'APPROVED', why:'Waited at FaultWall for a reviewer. Then sent: 200 OK, refund created', who:'approver:alice-oncall', note:'on your gateway', verdict:'Approved' },
+  { sql:'mcp  read_text_file  private/payroll.csv', kind:'block', tag:'BLOCKED', why:'Files in the private folder are blocked by rule. Never reached the file server' },
+  { sql:'postgres  DELETE FROM orders WHERE id = ?', kind:'deny', tag:'HOLD', after:'DENIED', why:'Denied with a reason: "Deletes need a ticket." Row kept.', who:'dana@acme.test', note:'at the proxy', verdict:'Denied' },
 ];
 
 function addRow(s){
@@ -422,7 +422,7 @@ async function play(s){
     why.textContent='Waiting at FaultWall. Nothing sent yet.'; animate(why,{opacity:[0,1]},{duration:.3});
     const pulse = animate(ring, { opacity:[.9,0], scale:[.7,1.9] }, { duration:1.1, repeat:Infinity, ease:'easeOut' });
     await sleep(1500);
-    $('#rv-what').textContent = 'Waiting for review'; $('#rv-what').style.color = COLOR.hold; $('#rv-who').textContent = '';
+    $('#rv-what').textContent = 'Waiting for review'; $('#rv-what').style.color = COLOR.hold; $('#rv-who').textContent = ''; $('#rv-note').textContent = s.note;
     await animate(review, { opacity:[0,1], y:[12,0] }, { type:'spring', stiffness:300, damping:26 });
     await sleep(900);
     $('#rv-what').textContent = s.verdict; $('#rv-who').textContent = s.who;
